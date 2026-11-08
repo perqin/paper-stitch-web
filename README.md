@@ -2,6 +2,18 @@
 
 React + TypeScript web app powered by Vite.
 
+## UI components
+
+Use [Material UI](https://mui.com/material-ui/getting-started/) as the default
+component library for project UI. Use MUI components and their `sx` prop for
+layout and styling rather than recreating standard controls with custom CSS.
+
+The app uses Emotion (MUI's default styling engine), a shared theme in
+`src/theme.ts`, and app-wide `ThemeProvider` and `CssBaseline` in `src/main.tsx`.
+Roboto font weights 300, 400, 500, and 700 are bundled locally with Fontsource;
+no external font service is required. Customize global design tokens and
+component defaults in the shared theme.
+
 ## Development
 
 Use Node.js 24 and npm.
