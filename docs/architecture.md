@@ -7,9 +7,9 @@
 - **Material UI** as the default UI component library, with its Emotion styling engine and MUI icons.
 - **ThemeProvider and CssBaseline** for shared visual tokens and baseline styles. Roboto is bundled locally through Fontsource.
 - **Oxlint** and the TypeScript production build for static verification.
-- **Zustand** for future shared editor state. The dependency is installed; the [state model](state-model.md) is a review proposal, not an implemented store.
+- **Zustand** for the shared editor document and immutable actions, following the approved [state model](state-model.md).
 
-The current application is a client-side UI shell. It has no backend, storage, upload service, image-processing engine, or application store. Keep existing presentation state local until the state model is approved.
+The application is client-side, with local image import, editing controls, and pure composition geometry. It has no backend, persistence, upload service, pixel renderer, or encoder. The left preview remains static and download is disabled.
 
 ## Project structure
 
@@ -28,20 +28,22 @@ The current application is a client-side UI shell. It has no backend, storage, u
 
 **CanvasPreview** shows the design's sample composition using clipped image elements on a gray workspace. Despite the product term “canvas,” this is not yet an HTML canvas renderer. Its positions are presentation coordinates, not a transform algorithm or output geometry.
 
-**ImageCard** presents image metadata, six numeric offset/crop controls, and a four-option quarter-turn rotation selector, plus ordering, removal, and quick-rotate actions. Numeric fields are read-only; rotation and business actions are disabled. Labels include the image name to distinguish repeated controls for assistive technology. Reset and Add images sit in a fixed toolbar above the scrolling cards.
+**ImageCard** presents image metadata and editable offset/crop/rotation controls, plus ordering, removal, and quick-rotate actions. Numeric drafts and validation messages stay local to **NumericField**, with valid values committed on blur or Enter. Memoized cards retain unchanged record references. Reset and Add images sit in a fixed toolbar above the scrolling cards.
 
-**DownloadPanel** owns only menu visibility and selected format. The primary download action remains disabled. Output dimensions are labeled as a sample rather than calculated from assets.
+**DownloadPanel** derives output dimensions through the pure composition module, memoized from image records and mode. It keeps menu visibility and selected format local. The primary download action remains disabled.
 
-**demo.ts** supplies explicitly separated presentation fixtures. Real import state must replace these fixtures when functionality is introduced; it must not treat them as user files or persist them as a project.
+**demo.ts** supplies only the unchanged left preview's presentation fixtures. The editing document starts empty and never imports these fixtures automatically.
 
-## State and future processing boundary
+## State and processing boundaries
 
-Only transient presentation state is implemented: selected mode and selected export format/menu visibility. There is deliberately no image-editing state or business event pipeline yet. Proposed ownership, fields, and coordinate semantics are documented separately in the [state model draft](state-model.md).
+**model.ts / store.ts** define the document and typed Zustand actions. Metadata and committed edits are plain data; validation rejects invalid edits without changing the document. Mode changes and Reset atomically zero offsets, crops, and rotations. The store factory creates isolated instances for tests; the application uses one instance.
 
-When functional work begins, keep imported image metadata and edit parameters separate from decoded image resources. A composition module should own crop, quarter-turn rotation, placement, and output bounds; preview and export should consume the same composition result to avoid divergent geometry. Import should own image resource lifetimes, and export should own encoding and download behavior. These are intended boundaries, not implemented services. Screen coordinates, reset semantics, and the shared opaque PNG/JPEG background are specified in the state model; rendering technology and resource limits remain implementation decisions.
+**resources.ts** serializes import batches, decodes images using browser image APIs, retains source files/object URLs outside Zustand, and registers resources before publishing successful records. Failures are reported per file. Removal detaches the record before revoking its URL; failed or disposed imports release allocated resources. Source URLs are reused for edits and reorder operations.
+
+**composition.ts** calculates cropped and quarter-turned dimensions, sequential placement, and the union bounds. It performs exact safe-integer arithmetic and rejects overflow instead of returning inaccurate dimensions. These are geometry calculations only: neither the left preview nor download consumes them for rendering yet. Future preview and export must share this composition contract; export resource leases and encoding are deferred until download is implemented.
 
 ## Verification and workflow
 
-Run `pnpm lint` and `pnpm build`. Browser checks should cover the workspace at desktop and narrow widths, independent list scrolling, accessible controls, format menu operation, and successful local asset/font loading without runtime errors.
+Run `pnpm test`, `pnpm lint`, and `pnpm build`. Tests use Node.js 24's built-in test runner and TypeScript stripping for store, geometry, and resource lifecycle checks. Browser checks cover actual file import, edit validation, quarter-turns, ordering/removal, reset/mode changes, background retention, output dimensions, and desktop/narrow layouts while confirming the static preview and disabled download remain unchanged.
 
 Development normally occurs directly on the default trunk branch, with one Conventional Commit per assigned task. Commit author and committer are `Y.U.K.I. <yuki-bot@perqin.com>`. Keep workstation-specific hostnames outside tracked configuration.

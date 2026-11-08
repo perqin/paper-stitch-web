@@ -1,12 +1,12 @@
 # Editor state model
 
-**Status: revised proposal — example state structure pending confirmation, not implemented.** The overall design is accepted with quarter-turn rotation, screen coordinates, and reset-on-mode-change semantics below. Zustand is installed, but no application store, model types, actions, or component bindings have been added. Existing UI-only state remains local to its components.
+**Status: approved and implemented for editing controls and output geometry.** The document, Zustand actions, resource management, and right-panel bindings follow this model. Canvas rendering and download remain unimplemented; export lifecycle requirements below apply to future work.
 
 ## Goals and boundaries
 
 Use one small Zustand store as the source of truth for the current stitching document. Separate editable document data, browser image resources, derived composition, and transient UI state. Do not add persistence, undo history, middleware, multiple document support, or Freeform state in this iteration.
 
-## Proposed document state
+## Document state
 
 | Field | Shape / default | Meaning |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ Start with an ordered array rather than an entity map plus a separate order arra
 
 Metadata and edit parameters are plain data. The record does not contain `File`, image elements, object URLs, `ImageBitmap`, canvas objects, generated blobs, or computed positions.
 
-## Placement semantics proposed for approval
+## Placement semantics
 
 - Use screen coordinates: the top-left is the origin, positive X points right, and positive Y points down. Document edit units are original image pixels, independent of preview zoom/pan. Offsets and crop amounts are whole pixels.
 - Apply inward crop first, then a clockwise quarter-turn. At `90` or `270` degrees, exchange the cropped width and height; at `0` or `180`, retain them. The resulting rectangle is axis-aligned, so arbitrary-angle bounding-box calculations are unnecessary.
@@ -40,7 +40,7 @@ Metadata and edit parameters are plain data. The record does not contain `File`,
 - Derive output bounds from the union of placed image rectangles. Translate that union to the output origin and round outer bounds outward to whole pixels. Offsets move images relative to one another, not against a fixed-size canvas; blank margins outside the union are not retained.
 - Empty documents have no output dimensions and cannot be exported. Source images are not scaled to equal width or height by default.
 
-These semantics describe the agreed design, not a working composition pipeline in the UI shell. Stored offsets are distinct from computed absolute positions.
+These semantics are implemented as pure geometry, not pixel rendering. Stored offsets are distinct from computed absolute positions.
 
 ## State ownership
 
@@ -50,7 +50,7 @@ These semantics describe the agreed design, not a working composition pipeline i
 | Import/resource controller | File selection and decoding, source `File`s, preview URLs and decoded resources keyed by image ID, import progress/errors, cancellation and cleanup. |
 | Composition module | Pure derivation of cropped/rotated bounds, placed rectangles and output dimensions from the document. Shared by preview and export; not stored as a second source of truth. |
 | React components | Menu anchors, selected download format, color-picker visibility, numeric text drafts and validation messages. Export format remains local to DownloadPanel because it has no other consumer. |
-| Export controller | Encoding progress/error and a consistent document snapshot for each download. No generated blobs in the document store. |
+| Future export controller | Encoding progress/error and a consistent document snapshot for each download. No generated blobs in the document store. |
 
 Store actions are the only document mutation interface: change mode (with parameter reset), reset all positioning parameters, change background, append decoded images, update one image's edit parameters, move an image up/down, and remove an image. Do not expose a generic arbitrary document patch action. Crop must leave a positive source area; offsets/crops must be finite integers, and rotation must be one of the four supported angles. An invalid edit leaves the last valid document unchanged; components may temporarily display incomplete text such as a minus sign while editing.
 
@@ -58,9 +58,9 @@ Store actions are the only document mutation interface: change mode (with parame
 
 Decode an import batch outside Zustand, then append successful image records in selection order, not decode-completion order. Failed files produce import feedback without placeholder document records. Imports must be serialized by the controller so separate batches also preserve selection order.
 
-Register resources before publishing their records. A resource registry owns each record's corresponding file and browser resources. Removal first detaches the record from the document, then releases resources once no preview/export consumer holds them. Cancelled or failed imports release anything already allocated. Reordering and parameter edits do not recreate source URLs or decode the file again.
+Register resources before publishing their records. A resource registry owns each record's corresponding file and browser resources. Removal first detaches the record from the document, then releases its URL; there are no active composition preview/export consumers in this delivery. Failed or disposed imports release anything already allocated. Reordering and parameter edits do not recreate source URLs or decode the file again. Future rendering/export must retain resources while in use before extending this removal path.
 
-Export captures the current document and format at click time and holds its source resources until encoding completes or fails. Subsequent edits affect the next export, not the in-flight result. No worker, cache, or reference-counting implementation is selected by this proposal; these are lifecycle requirements for the eventual controllers.
+When export is implemented, it must capture the current document and format at click time and hold its source resources until encoding completes or fails. Subsequent edits affect the next export, not the in-flight result. Workers, caches, and resource leases are not implemented in this delivery.
 
 ## Zustand usage
 
@@ -68,7 +68,7 @@ Use a typed store with immutable updates. Subscribe to narrow fields or individu
 
 Keep one store per active application session; isolated tests should create fresh store instances. Do not add `persist`, Immer, Redux DevTools, or a context provider without a concrete need. In particular, receipt contents and browser resources must not be automatically written to local storage or sent to debugging services.
 
-## Example document state for confirmation
+## Example document state
 
 This is a plain JavaScript example, not executable application code or production initial state. It shows two imported images with illustrative edits. Store action functions are intentionally omitted; browser resources remain outside this object.
 
@@ -99,7 +99,7 @@ const state = {
 
 After Reset, every record has `offset: { x: 0, y: 0 }`, all four crop values set to `0`, and `rotationDeg: 0`. Changing mode performs the same reset and updates `mode`. No filenames, original dimensions, image order, or background settings are reset.
 
-After structure confirmation, introduce model types, a store factory/actions, resource coordination, and focused tests in a separate implementation task. The sample fixtures must not become the initial production document.
+The store's real initial document has no images. The left preview's sample fixtures are not part of the editing document.
 
 ## References
 

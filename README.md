@@ -3,7 +3,8 @@
 React + TypeScript web app powered by Vite.
 
 Paper Stitch joins scans of paper receipts into one continuous image. The current
-delivery is a UI-only editor preview. See [project documentation](docs/README.md)
+delivery supports image import and editing controls with live output dimensions;
+the canvas preview and download are not connected yet. See [project documentation](docs/README.md)
 for the product scope and technical architecture.
 
 ## UI components
@@ -34,6 +35,7 @@ pnpm dev
 
 ```sh
 pnpm lint
+pnpm test
 pnpm build
 pnpm preview
 ```

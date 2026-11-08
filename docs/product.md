@@ -27,14 +27,20 @@ Each image card shows a thumbnail, filename, and original width and height in pi
 
 List order represents the intended stitch order. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. Offsets adjust automatic stitch positions, not absolute canvas coordinates.
 
-Changing stitch mode resets every image's X/Y offsets, four crop amounts, and rotation to zero. Reset performs the same reset without changing mode. Both preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for the proposed data structure and composition details.
+Changing stitch mode resets every image's X/Y offsets, four crop amounts, and rotation to zero. Reset performs the same reset without changing mode. Both preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for data structure and composition details. Selecting the active mode does not reset edits.
 
-## Current delivery: UI shell
+## Current delivery: editing controls
 
-The workspace displays two bundled sample scans from the design reference, read-only example values, and explicitly labeled sample output dimensions. These are presentation fixtures, not user imports or a computed stitch result.
+The right panel starts with no images. Add images opens a multi-file picker and decodes browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. No images are uploaded or persisted.
 
-Mode selection and the PNG/JPEG menu have local UI state only. Changing them does not change the preview or create a file. Reset, import, image actions, parameter editing (including rotation selection), background selection, and downloading are unavailable in this delivery. The reset behavior described above is a requirement for the later state implementation, not a working action in the shell. No image-processing, persistence, or upload behavior is implemented.
+Offsets and inward crops accept whole pixels and commit on blur or Enter. Invalid inputs show feedback and leave the last valid document unchanged. Crop must leave at least one pixel on each axis. Rotation selection and the quick-rotate button support quarter-turns only. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
+
+The background button opens the browser color picker and stores an opaque color, initially white. It does not recolor the placeholder preview yet.
+
+Output dimensions update from the current order, crop, rotation, offsets, and stitch mode. They represent the tight union of the placed rectangles, without automatic scaling or extra outer margins. Empty documents show **Output: —**. Values exceeding exact supported coordinate arithmetic show **Output: out of range**, not an approximate size.
+
+The left preview remains the original static, labeled design sample and does not respond to imported images or edits. PNG/JPEG format selection remains available, but downloading is disabled. Pixel rendering, encoding, persistence, and uploads are not implemented.
 
 ## Subsequent functional scope
 
-Future work will connect image import, vertical and horizontal composition, alignment/crop/rotation controls, background selection, output dimension calculation, and PNG/JPEG export. Automatic overlap detection, Freeform, and advanced editing are not part of the current UI-shell scope.
+Future work will connect the document to canvas rendering and PNG/JPEG export. Automatic overlap detection, Freeform, and advanced editing remain outside the current scope.

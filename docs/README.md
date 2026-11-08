@@ -4,7 +4,7 @@ Paper Stitch joins overlapping scans of paper receipts into one long image.
 
 - [Product](product.md): audience, editor layout, controls, and delivery scope.
 - [Technical architecture](architecture.md): stack, module boundaries, and implementation status.
-- [Editor state model](state-model.md): proposed state ownership and placement semantics; pending review, not implemented.
+- [Editor state model](state-model.md): approved document structure, placement semantics, and resource ownership.
 
 The Figma overview is the visual reference. Product requirements extend it with an application header and a canvas background control.
 
