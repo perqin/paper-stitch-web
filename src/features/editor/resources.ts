@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import type { ImageRecord } from './model.ts'
 
 interface DecodedImage {
@@ -33,7 +34,7 @@ async function decodeFile(file: File): Promise<DecodedImage> {
 export function createImageResources(
   document: () => DocumentActions,
   decode: Decoder = decodeFile,
-  createId = () => crypto.randomUUID() as string,
+  createId: () => string = uuidv4,
 ) {
   const resources = new Map<string, DecodedImage & { file: File }>()
   let queue: Promise<unknown> = Promise.resolve()

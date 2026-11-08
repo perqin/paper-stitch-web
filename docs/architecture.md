@@ -40,6 +40,8 @@ The application is client-side, with local image import, editing controls, and p
 
 **resources.ts** serializes import batches, decodes images using browser image APIs, retains source files/object URLs outside Zustand, and registers resources before publishing successful records. Failures are reported per file. Removal detaches the record before revoking its URL; failed or disposed imports release allocated resources. Source URLs are reused for edits and reorder operations.
 
+Image IDs use UUID v4 from the `uuid` package, which uses `crypto.getRandomValues` when native `crypto.randomUUID` is unavailable. This supports ordinary HTTP development origins as well as HTTPS and localhost; browser validation must cover a non-localhost HTTP origin, not just localhost's secure-context exception.
+
 **composition.ts** calculates cropped and quarter-turned dimensions, sequential placement, and the union bounds. It performs exact safe-integer arithmetic and rejects overflow instead of returning inaccurate dimensions. These are geometry calculations only: neither the left preview nor download consumes them for rendering yet. Future preview and export must share this composition contract; export resource leases and encoding are deferred until download is implemented.
 
 ## Verification and workflow

@@ -4,6 +4,26 @@ import { createImageResources } from './resources.ts'
 
 const file = (name: string) => new File(['image'], name, { type: 'image/png' })
 
+test('default image IDs work when crypto.randomUUID is unavailable', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(crypto, 'randomUUID')
+  Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: undefined })
+  try {
+    const records: { id: string }[] = []
+    const resources = createImageResources(() => ({
+      appendImages: images => { records.push(...images); return true },
+      removeImage: () => {},
+    }), async () => ({ url: 'blob:test', width: 100, height: 200, release: () => {} }))
+    assert.deepEqual(await resources.importFiles([file('one.png'), file('two.png')]), [])
+    assert.equal(records.length, 2)
+    for (const record of records) assert.match(record.id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+    assert.notEqual(records[0].id, records[1].id)
+    resources.dispose()
+  } finally {
+    if (descriptor) Object.defineProperty(crypto, 'randomUUID', descriptor)
+    else Reflect.deleteProperty(crypto, 'randomUUID')
+  }
+})
+
 function setup() {
   const records: { id: string; name: string }[] = []
   const released: string[] = []
