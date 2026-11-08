@@ -2,6 +2,10 @@
 
 React + TypeScript web app powered by Vite.
 
+Paper Stitch joins scans of paper receipts into one continuous image. The current
+delivery is a UI-only editor preview. See [project documentation](docs/README.md)
+for the product scope and technical architecture.
+
 ## UI components
 
 Use [Material UI](https://mui.com/material-ui/getting-started/) as the default
