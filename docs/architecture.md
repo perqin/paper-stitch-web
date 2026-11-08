@@ -3,7 +3,7 @@
 ## Stack
 
 - **React and TypeScript** for the browser application.
-- **Vite** for development and production bundling; **npm** for dependencies.
+- **Vite** for development and production bundling; **pnpm** for dependencies, pinned through `packageManager` in `package.json`. Commit `pnpm-lock.yaml` and use `pnpm install --frozen-lockfile` for reproducible installs.
 - **Material UI** as the default UI component library, with its Emotion styling engine and MUI icons.
 - **ThemeProvider and CssBaseline** for shared visual tokens and baseline styles. Roboto is bundled locally through Fontsource.
 - **Oxlint** and the TypeScript production build for static verification.
@@ -41,6 +41,6 @@ When functional work begins, keep imported image metadata and edit parameters se
 
 ## Verification and workflow
 
-Run `npm run lint` and `npm run build`. Browser checks should cover the workspace at desktop and narrow widths, independent list scrolling, accessible controls, format menu operation, and successful local asset/font loading without runtime errors.
+Run `pnpm lint` and `pnpm build`. Browser checks should cover the workspace at desktop and narrow widths, independent list scrolling, accessible controls, format menu operation, and successful local asset/font loading without runtime errors.
 
 Development normally occurs directly on the default trunk branch, with one Conventional Commit per assigned task. Commit author and committer are `Y.U.K.I. <yuki-bot@perqin.com>`. Keep workstation-specific hostnames outside tracked configuration.

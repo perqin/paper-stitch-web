@@ -20,19 +20,22 @@ component defaults in the shared theme.
 
 ## Development
 
-Use Node.js 24 and npm.
+Use Node.js 24 and pnpm. The pnpm version is pinned in `package.json`.
+Enable pnpm through Corepack (install Corepack first if your Node.js distribution
+does not include it):
 
 ```sh
-npm ci
-npm run dev
+corepack enable pnpm
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
 ## Checks and production build
 
 ```sh
-npm run lint
-npm run build
-npm run preview
+pnpm lint
+pnpm build
+pnpm preview
 ```
 
 The production build is written to `dist/`.
