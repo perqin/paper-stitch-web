@@ -7,8 +7,9 @@
 - **Material UI** as the default UI component library, with its Emotion styling engine and MUI icons.
 - **ThemeProvider and CssBaseline** for shared visual tokens and baseline styles. Roboto is bundled locally through Fontsource.
 - **Oxlint** and the TypeScript production build for static verification.
+- **Zustand** for future shared editor state. The dependency is installed; the [state model](state-model.md) is a review proposal, not an implemented store.
 
-The current application is a client-side UI shell. It has no backend, storage, upload service, image-processing engine, or global state library. Do not introduce these solely to support static presentation.
+The current application is a client-side UI shell. It has no backend, storage, upload service, image-processing engine, or application store. Keep existing presentation state local until the state model is approved.
 
 ## Project structure
 
@@ -35,7 +36,7 @@ The current application is a client-side UI shell. It has no backend, storage, u
 
 ## State and future processing boundary
 
-Only transient presentation state is implemented: selected mode and selected export format/menu visibility. There is deliberately no image-editing state or business event pipeline yet.
+Only transient presentation state is implemented: selected mode and selected export format/menu visibility. There is deliberately no image-editing state or business event pipeline yet. Proposed ownership, fields, and coordinate semantics are documented separately in the [state model draft](state-model.md).
 
 When functional work begins, keep imported image metadata and edit parameters separate from decoded image resources. A composition module should own crop, rotation, placement, and output bounds; preview and export should consume the same composition result to avoid divergent geometry. Import should own image resource lifetimes, and export should own encoding and download behavior. These are intended boundaries, not implemented services or settled algorithms. Rendering technology, limits, coordinate conventions, and JPEG background behavior remain decisions for that work.
 

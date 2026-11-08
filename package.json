@@ -17,7 +17,8 @@
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
