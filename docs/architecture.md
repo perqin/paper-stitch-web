@@ -28,7 +28,7 @@ The current application is a client-side UI shell. It has no backend, storage, u
 
 **CanvasPreview** shows the design's sample composition using clipped image elements on a gray workspace. Despite the product term “canvas,” this is not yet an HTML canvas renderer. Its positions are presentation coordinates, not a transform algorithm or output geometry.
 
-**ImageCard** presents image metadata and the seven numeric controls, plus ordering, removal, and quick-rotate actions. Numeric fields are read-only; business actions are disabled. Labels include the image name to distinguish repeated controls for assistive technology.
+**ImageCard** presents image metadata, six numeric offset/crop controls, and a four-option quarter-turn rotation selector, plus ordering, removal, and quick-rotate actions. Numeric fields are read-only; rotation and business actions are disabled. Labels include the image name to distinguish repeated controls for assistive technology. Reset and Add images sit in a fixed toolbar above the scrolling cards.
 
 **DownloadPanel** owns only menu visibility and selected format. The primary download action remains disabled. Output dimensions are labeled as a sample rather than calculated from assets.
 
@@ -38,7 +38,7 @@ The current application is a client-side UI shell. It has no backend, storage, u
 
 Only transient presentation state is implemented: selected mode and selected export format/menu visibility. There is deliberately no image-editing state or business event pipeline yet. Proposed ownership, fields, and coordinate semantics are documented separately in the [state model draft](state-model.md).
 
-When functional work begins, keep imported image metadata and edit parameters separate from decoded image resources. A composition module should own crop, rotation, placement, and output bounds; preview and export should consume the same composition result to avoid divergent geometry. Import should own image resource lifetimes, and export should own encoding and download behavior. These are intended boundaries, not implemented services or settled algorithms. Rendering technology, limits, coordinate conventions, and JPEG background behavior remain decisions for that work.
+When functional work begins, keep imported image metadata and edit parameters separate from decoded image resources. A composition module should own crop, quarter-turn rotation, placement, and output bounds; preview and export should consume the same composition result to avoid divergent geometry. Import should own image resource lifetimes, and export should own encoding and download behavior. These are intended boundaries, not implemented services. Screen coordinates, reset semantics, and the shared opaque PNG/JPEG background are specified in the state model; rendering technology and resource limits remain implementation decisions.
 
 ## Verification and workflow
 

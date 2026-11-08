@@ -8,6 +8,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import Add from '@mui/icons-material/Add'
+import RestartAlt from '@mui/icons-material/RestartAlt'
 import MoreVert from '@mui/icons-material/MoreVert'
 import MoreHoriz from '@mui/icons-material/MoreHoriz'
 import OpenWith from '@mui/icons-material/OpenWith'
@@ -47,13 +48,14 @@ export default function EditorShell() {
         </Stack>
         <Divider />
         <Typography variant="caption" color="text.secondary" sx={{ py: 1 }}>Sample images · editing and export are not connected.</Typography>
+        <Stack direction="row" spacing={1.5} sx={{ pb: 2 }}>
+          <Button disabled fullWidth variant="outlined" startIcon={<RestartAlt />} title="Reset all offsets, crops, and rotations">Reset</Button>
+          <Button disabled fullWidth variant="contained" startIcon={<Add />}>Add images</Button>
+        </Stack>
         <Box component="section" aria-label="Imported images" tabIndex={0} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pr: 0.5, pb: 2, scrollbarGutter: 'stable' }}>
           <Stack component="ul" spacing={2.75} sx={{ m: 0, p: 0 }}>
             {demoImages.map(image => <ImageCard key={image.id} image={image} />)}
           </Stack>
-          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 3 }}>
-            <Button disabled variant="contained" startIcon={<Add />} sx={{ bgcolor: 'secondary.light', color: 'secondary.main' }}>Add images</Button>
-          </Box>
         </Box>
         <Divider />
         <DownloadPanel />

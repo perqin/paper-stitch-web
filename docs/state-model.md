@@ -1,6 +1,6 @@
 # Editor state model
 
-**Status: proposal for review — not implemented.** Zustand is installed, but no application store, model types, actions, or component bindings have been added. Existing UI-only state remains local to its components.
+**Status: revised proposal — example state structure pending confirmation, not implemented.** The overall design is accepted with quarter-turn rotation, screen coordinates, and reset-on-mode-change semantics below. Zustand is installed, but no application store, model types, actions, or component bindings have been added. Existing UI-only state remains local to its components.
 
 ## Goals and boundaries
 
@@ -25,21 +25,22 @@ Start with an ordered array rather than an entity map plus a separate order arra
 | `originalSize` | Positive integer `width`, `height` | Decoded source dimensions, after browser orientation handling and before edits. |
 | `offset` | Signed pixel `x`, `y`; both zero | Adjustment from the automatically assigned position. |
 | `crop` | Non-negative pixel `top`, `right`, `bottom`, `left`; all zero | Inward crop in the original image's coordinate system. |
-| `rotationDeg` | Clockwise degrees; default zero | Rotation after cropping, normalized to a single turn. |
+| `rotationDeg` | `0`, `90`, `180`, or `270`; default `0` | Clockwise quarter-turn rotation after cropping. Other angles are invalid. |
 
 Metadata and edit parameters are plain data. The record does not contain `File`, image elements, object URLs, `ImageBitmap`, canvas objects, generated blobs, or computed positions.
 
 ## Placement semantics proposed for approval
 
-- Use original image pixels as the document coordinate units; preview zoom never changes edit values. Initially offsets and crop amounts are whole pixels; rotation can be fractional.
-- Apply inward crop first, then rotate about the cropped image's center. Use the rotated rectangle's axis-aligned bounding box for placement; rotation must not silently clip content.
+- Use screen coordinates: the top-left is the origin, positive X points right, and positive Y points down. Document edit units are original image pixels, independent of preview zoom/pan. Offsets and crop amounts are whole pixels.
+- Apply inward crop first, then a clockwise quarter-turn. At `90` or `270` degrees, exchange the cropped width and height; at `0` or `180`, retain them. The resulting rectangle is axis-aligned, so arbitrary-angle bounding-box calculations are unnecessary.
 - For Vertical, align each automatic position to the document's left edge and to the preceding image's placed bottom edge. For Horizontal, align it to the document's top edge and to the preceding image's placed right edge. The first image's automatic position is the origin.
 - Add the image's X/Y offsets to that automatic position. Placement of the next image follows the current image's adjusted edge, so edits along the stitch axis shift subsequent images. Negative offsets permit overlap; positive offsets permit a gap.
-- Reordering recomputes automatic placement and preserves each image's edits. Switching modes preserves X/Y offsets as physical axes; it does not swap or reset them.
+- Reordering recomputes automatic placement and preserves each image's edits. Changing to a different mode resets all images' offsets, four crop values, and rotation to zero in the same update as the mode change. Selecting the already-active mode is a no-op.
+- The Reset button performs that same parameter reset without changing the mode. Both operations preserve image identity, metadata, resources, order, and canvas background color. Reset is not removal or a new document.
 - Derive output bounds from the union of placed image rectangles. Translate that union to the output origin and round outer bounds outward to whole pixels. Offsets move images relative to one another, not against a fixed-size canvas; blank margins outside the union are not retained.
 - Empty documents have no output dimensions and cannot be exported. Source images are not scaled to equal width or height by default.
 
-These semantics are proposals, not behavior already promised by the UI shell. They deliberately distinguish stored offsets from computed absolute positions.
+These semantics describe the agreed design, not a working composition pipeline in the UI shell. Stored offsets are distinct from computed absolute positions.
 
 ## State ownership
 
@@ -51,7 +52,7 @@ These semantics are proposals, not behavior already promised by the UI shell. Th
 | React components | Menu anchors, selected download format, color-picker visibility, numeric text drafts and validation messages. Export format remains local to DownloadPanel because it has no other consumer. |
 | Export controller | Encoding progress/error and a consistent document snapshot for each download. No generated blobs in the document store. |
 
-Store actions are the only document mutation interface: change mode/background, append decoded images, update one image's edit parameters, move an image up/down, and remove an image. Do not expose a generic arbitrary document patch action. Crop must leave a positive source area, and every numeric edit must be finite. An invalid edit leaves the last valid document unchanged; components may temporarily display incomplete text such as a minus sign while editing.
+Store actions are the only document mutation interface: change mode (with parameter reset), reset all positioning parameters, change background, append decoded images, update one image's edit parameters, move an image up/down, and remove an image. Do not expose a generic arbitrary document patch action. Crop must leave a positive source area; offsets/crops must be finite integers, and rotation must be one of the four supported angles. An invalid edit leaves the last valid document unchanged; components may temporarily display incomplete text such as a minus sign while editing.
 
 ## Resource lifecycle and asynchronous work
 
@@ -67,14 +68,38 @@ Use a typed store with immutable updates. Subscribe to narrow fields or individu
 
 Keep one store per active application session; isolated tests should create fresh store instances. Do not add `persist`, Immer, Redux DevTools, or a context provider without a concrete need. In particular, receipt contents and browser resources must not be automatically written to local storage or sent to debugging services.
 
-## Review decisions
+## Example document state for confirmation
 
-1. Confirm offsets are relative to sequential automatic placement, with stitch-axis adjustments propagating to later images, rather than absolute canvas coordinates.
-2. Confirm crop-before-rotation, clockwise angles, and original-pixel units.
-3. Confirm mode switches retain edits and output uses tight union bounds without automatic scaling or extra outer margins.
-4. Confirm an opaque white default background for both export formats; PNG transparency is deferred.
+This is a plain JavaScript example, not executable application code or production initial state. It shows two imported images with illustrative edits. Store action functions are intentionally omitted; browser resources remain outside this object.
 
-After approval, introduce model types, a store factory/actions, resource coordination, and focused tests in a separate implementation task. The sample fixtures must not become the initial production document.
+```js
+const state = {
+  mode: 'vertical',
+  backgroundColor: '#FFFFFF',
+  images: [
+    {
+      id: '06b659aa-0d64-4556-b77e-464ebbba38a7',
+      name: 'receipt-01.png',
+      originalSize: { width: 672, height: 3375 },
+      offset: { x: 0, y: 0 },
+      crop: { top: 0, right: 0, bottom: 0, left: 0 },
+      rotationDeg: 0,
+    },
+    {
+      id: 'b0e22302-da62-4b96-b569-0af6d3902978',
+      name: 'receipt-02.png',
+      originalSize: { width: 670, height: 3282 },
+      offset: { x: -10, y: -200 },
+      crop: { top: 50, right: 0, bottom: 0, left: 0 },
+      rotationDeg: 90,
+    },
+  ],
+}
+```
+
+After Reset, every record has `offset: { x: 0, y: 0 }`, all four crop values set to `0`, and `rotationDeg: 0`. Changing mode performs the same reset and updates `mode`. No filenames, original dimensions, image order, or background settings are reset.
+
+After structure confirmation, introduce model types, a store factory/actions, resource coordination, and focused tests in a separate implementation task. The sample fixtures must not become the initial production document.
 
 ## References
 

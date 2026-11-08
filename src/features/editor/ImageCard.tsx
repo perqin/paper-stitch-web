@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
+import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
@@ -15,7 +16,7 @@ import type { DemoImage } from './demo'
 const fields = [
   ['X offset', -10], ['Y offset', -200],
   ['Top crop', 50], ['Bottom crop', 0],
-  ['Left crop', 0], ['Right crop', 0], ['Rotation', 0],
+  ['Left crop', 0], ['Right crop', 0],
 ] as const
 
 export default function ImageCard({ image }: { image: DemoImage }) {
@@ -47,18 +48,24 @@ export default function ImageCard({ image }: { image: DemoImage }) {
               slotProps={{
                 input: {
                   readOnly: true,
-                  endAdornment: <InputAdornment position="end">{label === 'Rotation' ? '°' : 'px'}</InputAdornment>,
+                  endAdornment: <InputAdornment position="end">px</InputAdornment>,
                 },
                 htmlInput: { 'aria-label': `${label}: ${image.name}` },
               }}
             />
-            {label === 'Rotation' && (
-              <Tooltip title="Rotate 90° (not available in UI preview)">
-                <span><IconButton disabled aria-label={`Rotate 90°: ${image.name}`} size="small" sx={{ border: 1, borderColor: 'divider' }}><RotateRight fontSize="small" /></IconButton></span>
-              </Tooltip>
-            )}
           </Stack>
         ))}
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <TextField
+            select fullWidth disabled label="Rotation" value={0}
+            slotProps={{ select: { SelectDisplayProps: { 'aria-label': `Rotation: ${image.name}`, 'aria-labelledby': undefined } } }}
+          >
+            {[0, 90, 180, 270].map(angle => <MenuItem key={angle} value={angle}>{angle}°</MenuItem>)}
+          </TextField>
+          <Tooltip title="Rotate 90° (not available in UI preview)">
+            <span><IconButton disabled aria-label={`Rotate 90°: ${image.name}`} size="small" sx={{ border: 1, borderColor: 'divider' }}><RotateRight fontSize="small" /></IconButton></span>
+          </Tooltip>
+        </Stack>
       </Box>
     </Paper>
   )
