@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonGroup from '@mui/material/ButtonGroup'
@@ -7,12 +8,21 @@ import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Download from '@mui/icons-material/Download'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
-import { useEditorStore } from './store'
+import { editorStore, useEditorStore } from './store'
 import { calculateComposition } from './composition'
+import { exportImage } from './export'
+import type { ExportFormat } from './export'
+import type { ImageResources } from './resources'
+import type { RenderDocument } from './renderer'
 
-export default function DownloadPanel() {
+export default function DownloadPanel({ resources }: { resources: ImageResources }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-  const [format, setFormat] = useState('PNG')
+  const [format, setFormat] = useState<ExportFormat>('PNG')
+  const [exporting, setExporting] = useState(false)
+  const [error, setError] = useState('')
+  const busy = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const images = useEditorStore(state => state.images)
   const mode = useEditorStore(state => state.mode)
   const result = useMemo(() => {
@@ -20,25 +30,60 @@ export default function DownloadPanel() {
     catch { return { size: null, error: true } }
   }, [images, mode])
 
+  async function download() {
+    if (busy.current) return
+    busy.current = true
+    setExporting(true)
+    setError('')
+    let lease: ReturnType<ImageResources['acquire']> | undefined
+    try {
+      const state = editorStore.getState()
+      const snapshot: RenderDocument = structuredClone({ images: state.images, mode: state.mode, backgroundColor: state.backgroundColor })
+      lease = resources.acquire(snapshot.images.map(image => image.id))
+      const blob = await exportImage(snapshot, lease.getSource, format)
+      if (!mounted.current) return
+      const url = URL.createObjectURL(blob)
+      try {
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `paper-stitch.${format === 'PNG' ? 'png' : 'jpg'}`
+        document.body.appendChild(link)
+        try { link.click() } finally { link.remove() }
+      } finally {
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } catch (reason) {
+      if (mounted.current) setError(reason instanceof Error ? reason.message : 'Unable to export image.')
+    } finally {
+      lease?.release()
+      busy.current = false
+      if (mounted.current) setExporting(false)
+    }
+  }
+
   return (
+    <>
     <Box component="section" aria-label="Download" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, pt: 2 }}>
       <Box>
         <Typography variant="body2" aria-label="Output dimensions" aria-live="polite">{result.error ? 'Output: out of range' : result.size ? `Output: ${result.size.width} × ${result.size.height} px` : 'Output: —'}</Typography>
-        <Typography variant="caption" color="text.secondary">Download coming later</Typography>
+        <Typography variant="caption" color="text.secondary">Original pixel dimensions</Typography>
       </Box>
       <ButtonGroup variant="contained" disableElevation aria-label="Download options" sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', sm: 'center' } }}>
-        <Button disabled startIcon={<Download />} sx={{ minHeight: 48 }}>Download {format}</Button>
+        <Button disabled={!result.size || result.error || exporting} onClick={() => { void download() }} startIcon={<Download />} sx={{ minHeight: 48 }}>{exporting ? 'Exporting…' : `Download ${format}`}</Button>
         <Button
+          disabled={exporting}
           aria-label="Choose download format" aria-haspopup="menu"
           aria-expanded={Boolean(anchor)} aria-controls={anchor ? 'download-formats' : undefined}
           onClick={event => setAnchor(event.currentTarget)} sx={{ px: 1, minWidth: '40px !important' }}
         ><KeyboardArrowDown /></Button>
       </ButtonGroup>
       <Menu id="download-formats" anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
-        {['PNG', 'JPEG'].map(option => (
+        {(['PNG', 'JPEG'] as const).map(option => (
           <MenuItem key={option} selected={option === format} onClick={() => { setFormat(option); setAnchor(null) }}>{option}</MenuItem>
         ))}
       </Menu>
     </Box>
+    {error && <Alert severity="error" onClose={() => setError('')} sx={{ mt: 1 }}>{error}</Alert>}
+    </>
   )
 }

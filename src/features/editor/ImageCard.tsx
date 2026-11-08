@@ -51,7 +51,7 @@ export default memo(function ImageCard({ image, previewUrl, first, last, onRemov
       </Stack>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
         {(['x', 'y'] as const).map(axis => (
-          <NumericField key={axis} label={`${axis.toUpperCase()} offset`} imageName={image.name} value={image.offset[axis]}
+          <NumericField key={`${axis}:${first}`} label={`${axis.toUpperCase()} offset`} imageName={image.name} value={first ? 0 : image.offset[axis]} disabled={first}
             commit={value => commit('offset', axis, value)} />
         ))}
         {(['top', 'bottom', 'left', 'right'] as const).map(edge => (

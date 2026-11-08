@@ -25,22 +25,28 @@ Each image card shows a thumbnail, filename, and original width and height in pi
 - A rotation selector limited to clockwise `0°`, `90°`, `180°`, and `270°`, and a quick-rotate control.
 - Move up, move down, and remove actions.
 
-List order represents the intended stitch order. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. Offsets adjust automatic stitch positions, not absolute canvas coordinates.
+List order is both stitch and draw order: later images paint over earlier ones where they overlap. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. The first image is fixed at document `(0, 0)` and its offset inputs are disabled. Later images' offsets adjust automatic stitch positions, not absolute canvas coordinates. Reordering preserves edits; a saved offset is inactive while its image is first and becomes active again if moved later.
 
 Changing stitch mode resets every image's X/Y offsets, four crop amounts, and rotation to zero. Reset performs the same reset without changing mode. Both preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for data structure and composition details. Selecting the active mode does not reset edits.
 
-## Current delivery: editing controls
+## Import and editing
 
 The right panel starts with no images. Add images opens a multi-file picker and decodes browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. No images are uploaded or persisted.
 
 Offsets and inward crops accept whole pixels and commit on blur or Enter. Invalid inputs show feedback and leave the last valid document unchanged. Crop must leave at least one pixel on each axis. Rotation selection and the quick-rotate button support quarter-turns only. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
 
-The background button opens the browser color picker and stores an opaque color, initially white. It does not recolor the placeholder preview yet.
+The background button opens the browser color picker and stores an opaque color, initially white, used by both preview and export. Transparent parts of imported images reveal the background or preceding images.
 
 Output dimensions update from the current order, crop, rotation, offsets, and stitch mode. They represent the tight union of the placed rectangles, without automatic scaling or extra outer margins. Empty documents show **Output: —**. Values exceeding exact supported coordinate arithmetic show **Output: out of range**, not an approximate size.
 
-The left preview remains the original static, labeled design sample and does not respond to imported images or edits. PNG/JPEG format selection remains available, but downloading is disabled. Pixel rendering, encoding, persistence, and uploads are not implemented.
+## Preview and download
+
+The left preview renders the current document. Overlay buttons provide zoom in/out, four-direction pan, Fit, and 100%. Zoom uses the viewport center; 100% means one image pixel per CSS pixel. First import automatically fits the document. Subsequent edits do not reset or recenter the view, and negative offsets on later images never shift the document origin. Fit explicitly frames the current bounds. No mouse or trackpad gestures are implemented.
+
+Download creates a PNG (default) or JPEG at the displayed original pixel dimensions, without preview scaling, workspace margins, or resolution reduction. Only export translates the tight bounds to its output origin. PNG is lossless; JPEG uses high-quality lossy encoding. Both use the chosen opaque background.
+
+Each download uses the document and format at click time. Editing and removing images remain available while encoding, without changing that result. Only one export runs at a time. Empty documents cannot be downloaded. Browser canvas limits and encoding failures show an error instead of silently shrinking the output.
 
 ## Subsequent functional scope
 
-Future work will connect the document to canvas rendering and PNG/JPEG export. Automatic overlap detection, Freeform, and advanced editing remain outside the current scope.
+Large-image performance optimization, gesture controls, automatic overlap detection, Freeform, persistence, uploads, and advanced editing remain outside the current scope.

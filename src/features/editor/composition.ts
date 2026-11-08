@@ -31,8 +31,9 @@ export function calculateComposition(images: ImageRecord[], mode: StitchMode): C
     let width = safe(image.originalSize.width - image.crop.left - image.crop.right, true)
     let height = safe(image.originalSize.height - image.crop.top - image.crop.bottom, true)
     if (image.rotationDeg === 90 || image.rotationDeg === 270) [width, height] = [height, width]
-    const x = safe((mode === 'horizontal' ? edge : 0) + safe(image.offset.x))
-    const y = safe((mode === 'vertical' ? edge : 0) + safe(image.offset.y))
+    const first = placements.length === 0
+    const x = first ? 0 : safe((mode === 'horizontal' ? edge : 0) + safe(image.offset.x))
+    const y = first ? 0 : safe((mode === 'vertical' ? edge : 0) + safe(image.offset.y))
     const right = safe(x + width)
     const bottom = safe(y + height)
     placements.push({ id: image.id, x, y, width, height })

@@ -1,6 +1,6 @@
 # Editor state model
 
-**Status: approved and implemented for editing controls and output geometry.** The document, Zustand actions, resource management, and right-panel bindings follow this model. Canvas rendering and download remain unimplemented; export lifecycle requirements below apply to future work.
+**Status: implemented for editing, geometry, Canvas 2D preview, and PNG/JPEG download.** The document remains separate from browser resources, the preview camera, and export snapshots.
 
 ## Goals and boundaries
 
@@ -23,7 +23,7 @@ Start with an ordered array rather than an entity map plus a separate order arra
 | `id` | Browser-generated UUID | Identity for one imported occurrence. Importing the same file again creates a separate occurrence. |
 | `name` | Original filename | Display metadata; not an identity or a filesystem path. |
 | `originalSize` | Positive integer `width`, `height` | Decoded source dimensions, after browser orientation handling and before edits. |
-| `offset` | Signed pixel `x`, `y`; both zero | Adjustment from the automatically assigned position. |
+| `offset` | Signed pixel `x`, `y`; both zero | Adjustment from automatic placement, inactive while the record is first. |
 | `crop` | Non-negative pixel `top`, `right`, `bottom`, `left`; all zero | Inward crop in the original image's coordinate system. |
 | `rotationDeg` | `0`, `90`, `180`, or `270`; default `0` | Clockwise quarter-turn rotation after cropping. Other angles are invalid. |
 
@@ -33,14 +33,14 @@ Metadata and edit parameters are plain data. The record does not contain `File`,
 
 - Use screen coordinates: the top-left is the origin, positive X points right, and positive Y points down. Document edit units are original image pixels, independent of preview zoom/pan. Offsets and crop amounts are whole pixels.
 - Apply inward crop first, then a clockwise quarter-turn. At `90` or `270` degrees, exchange the cropped width and height; at `0` or `180`, retain them. The resulting rectangle is axis-aligned, so arbitrary-angle bounding-box calculations are unnecessary.
-- For Vertical, align each automatic position to the document's left edge and to the preceding image's placed bottom edge. For Horizontal, align it to the document's top edge and to the preceding image's placed right edge. The first image's automatic position is the origin.
-- Add the image's X/Y offsets to that automatic position. Placement of the next image follows the current image's adjusted edge, so edits along the stitch axis shift subsequent images. Negative offsets permit overlap; positive offsets permit a gap.
+- For Vertical, align each automatic position to the document's left edge and to the preceding image's placed bottom edge. For Horizontal, align it to the document's top edge and to the preceding image's placed right edge. The first image's placed top-left is always `(0, 0)`; its offsets are ignored and its offset inputs are disabled. Preserving the stored offsets allows them to become active again if that record moves later in the list.
+- For subsequent images, add X/Y offsets to the automatic position. Placement of the next image follows the current image's adjusted edge, so edits along the stitch axis shift subsequent images. Negative offsets permit overlap; positive offsets permit a gap.
 - Reordering recomputes automatic placement and preserves each image's edits. Changing to a different mode resets all images' offsets, four crop values, and rotation to zero in the same update as the mode change. Selecting the already-active mode is a no-op.
 - The Reset button performs that same parameter reset without changing the mode. Both operations preserve image identity, metadata, resources, order, and canvas background color. Reset is not removal or a new document.
-- Derive output bounds from the union of placed image rectangles. Translate that union to the output origin and round outer bounds outward to whole pixels. Offsets move images relative to one another, not against a fixed-size canvas; blank margins outside the union are not retained.
+- Derive output bounds from the union of placed image rectangles. Only export translates that union to its output origin. Preview uses stable document coordinates and its independent camera, so a later image's negative offset never moves the first image. Coordinates and sizes are already whole pixels; blank margins outside the union are not retained in export.
 - Empty documents have no output dimensions and cannot be exported. Source images are not scaled to equal width or height by default.
 
-These semantics are implemented as pure geometry, not pixel rendering. Stored offsets are distinct from computed absolute positions.
+These semantics are pure geometry shared by preview and export. Stored offsets are distinct from computed absolute positions.
 
 ## State ownership
 
@@ -49,8 +49,8 @@ These semantics are implemented as pure geometry, not pixel rendering. Stored of
 | Zustand document store | Mode, background, ordered metadata and committed edits; synchronous immutable actions. |
 | Import/resource controller | File selection and decoding, source `File`s, preview URLs and decoded resources keyed by image ID, import progress/errors, cancellation and cleanup. |
 | Composition module | Pure derivation of cropped/rotated bounds, placed rectangles and output dimensions from the document. Shared by preview and export; not stored as a second source of truth. |
-| React components | Menu anchors, selected download format, color-picker visibility, numeric text drafts and validation messages. Export format remains local to DownloadPanel because it has no other consumer. |
-| Future export controller | Encoding progress/error and a consistent document snapshot for each download. No generated blobs in the document store. |
+| React components | Menu anchors, selected download format, color-picker visibility, numeric text drafts, validation messages, and the preview's independent camera. |
+| DownloadPanel / export module | Local encoding progress/error, a click-time document/format snapshot, and retained source leases. No generated blobs in the document store. |
 
 Store actions are the only document mutation interface: change mode (with parameter reset), reset all positioning parameters, change background, append decoded images, update one image's edit parameters, move an image up/down, and remove an image. Do not expose a generic arbitrary document patch action. Crop must leave a positive source area; offsets/crops must be finite integers, and rotation must be one of the four supported angles. An invalid edit leaves the last valid document unchanged; components may temporarily display incomplete text such as a minus sign while editing.
 
@@ -58,9 +58,9 @@ Store actions are the only document mutation interface: change mode (with parame
 
 Decode an import batch outside Zustand, then append successful image records in selection order, not decode-completion order. Failed files produce import feedback without placeholder document records. Imports must be serialized by the controller so separate batches also preserve selection order.
 
-Register resources before publishing their records. A resource registry owns each record's corresponding file and browser resources. Removal first detaches the record from the document, then releases its URL; there are no active composition preview/export consumers in this delivery. Failed or disposed imports release anything already allocated. Reordering and parameter edits do not recreate source URLs or decode the file again. Future rendering/export must retain resources while in use before extending this removal path.
+Register resources before publishing their records. A resource registry owns each record's file, decoded image, and object URL. Preview acquires sources for each synchronous draw; export retains them through encoding. Removal first detaches the record, then retires the resource, releasing its URL only after the last lease ends. Failed or disposed imports release anything already allocated. Reordering and parameter edits do not recreate URLs or decode again.
 
-When export is implemented, it must capture the current document and format at click time and hold its source resources until encoding completes or fails. Subsequent edits affect the next export, not the in-flight result. Workers, caches, and resource leases are not implemented in this delivery.
+Export captures the document and format at click time and holds source resources until encoding completes or fails. Subsequent edits affect the next export, not the in-flight result. Leases are released on both success and failure. Workers and complex caches are deferred.
 
 ## Zustand usage
 
@@ -99,7 +99,7 @@ const state = {
 
 After Reset, every record has `offset: { x: 0, y: 0 }`, all four crop values set to `0`, and `rotationDeg: 0`. Changing mode performs the same reset and updates `mode`. No filenames, original dimensions, image order, or background settings are reset.
 
-The store's real initial document has no images. The left preview's sample fixtures are not part of the editing document.
+The store's real initial document and preview have no images. Bundled design-reference scans are not imported automatically.
 
 ## References
 

@@ -63,7 +63,7 @@ export default function EditorShell() {
       display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 467px' },
       gap: 3, p: { xs: 2, md: 3 }, height: { md: '100dvh' }, minHeight: '100dvh',
     }}>
-      <CanvasPreview />
+      <CanvasPreview resources={imageResources} />
       <Box component="aside" aria-label="Stitch controls" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: { xs: 850, md: '100%' } }}>
         <Stack component="header" direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2.5 }}>
           <Box sx={{ display: 'flex', p: 1, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}><ReceiptLong aria-hidden="true" /></Box>
@@ -88,7 +88,7 @@ export default function EditorShell() {
           </Button>
         </Stack>
         <Divider />
-        <Typography variant="caption" color="text.secondary" sx={{ py: 1 }}>Preview and download are not connected yet.</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ py: 1 }}>First image anchored at origin · crop and rotate before placement.</Typography>
         <Stack direction="row" spacing={1.5} sx={{ pb: 2 }}>
           <Button disabled={!images.length} onClick={reset} fullWidth variant="outlined" startIcon={<RestartAlt />} title="Reset all offsets, crops, and rotations">Reset</Button>
           <Button disabled={importing} onClick={() => picker.current?.click()} fullWidth variant="contained" startIcon={<Add />}>{importing ? 'Importing…' : 'Add images'}</Button>
@@ -106,7 +106,7 @@ export default function EditorShell() {
           </Stack>
         </Box>
         <Divider />
-        <DownloadPanel />
+        <DownloadPanel resources={imageResources} />
       </Box>
     </Box>
   )

@@ -7,6 +7,7 @@ interface NumericFieldProps {
   imageName: string
   value: number
   crop?: boolean
+  disabled?: boolean
   commit: (value: number) => boolean
 }
 
@@ -14,7 +15,7 @@ export default function NumericField(props: NumericFieldProps) {
   return <NumericInput key={props.value} {...props} />
 }
 
-function NumericInput({ label, imageName, value, crop = false, commit }: NumericFieldProps) {
+function NumericInput({ label, imageName, value, crop = false, disabled = false, commit }: NumericFieldProps) {
   const [draft, setDraft] = useState(String(value))
   const [error, setError] = useState('')
 
@@ -35,7 +36,7 @@ function NumericInput({ label, imageName, value, crop = false, commit }: Numeric
 
   return (
     <TextField
-      fullWidth label={label} value={draft} type="number" error={Boolean(error)} helperText={error || undefined}
+      fullWidth disabled={disabled} label={label} value={draft} type="number" error={Boolean(error)} helperText={error || undefined}
       onChange={event => { setDraft(event.target.value); setError('') }} onBlur={finish}
       onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.querySelector('input')?.blur() }}
       slotProps={{

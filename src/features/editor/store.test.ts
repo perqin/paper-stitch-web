@@ -127,8 +127,8 @@ test('reorder recomputes placement from preserved edited dimensions', () => {
   before.moveImage('b', 'up')
   const after = store.getState()
   assert.deepEqual(calculateComposition(after.images, after.mode).placements, [
-    { id: 'b', x: -2, y: 3, width: 26, height: 14 },
-    { id: 'a', x: 0, y: 17, width: 20, height: 30 },
+    { id: 'b', x: 0, y: 0, width: 26, height: 14 },
+    { id: 'a', x: 0, y: 14, width: 20, height: 30 },
   ])
   assert.equal(after.images[0], before.images[1])
 })
