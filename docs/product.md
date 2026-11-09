@@ -41,7 +41,9 @@ Output dimensions update from the current order, crop, rotation, offsets, and st
 
 ## Preview and download
 
-The left preview renders the current document. Overlay buttons provide zoom in/out, four-direction pan, Fit, and 100%. Zoom uses the viewport center; 100% means one image pixel per CSS pixel. First import automatically fits the document. Subsequent edits do not reset or recenter the view, and negative offsets on later images never shift the document origin. Fit explicitly frames the current bounds. No mouse or trackpad gestures are implemented.
+The left preview renders the current document. Hold the left mouse button anywhere on the image or gray workspace and drag to pan. Scroll the mouse wheel or pinch the trackpad to zoom around the cursor. Wheel events inside a non-empty preview control the image rather than scrolling or zooming the browser page. Fit and 100% remain beside the zoom readout; the pan and +/- zoom buttons are removed. At 100%, one image pixel corresponds to one CSS pixel. First import automatically fits the document.
+
+Dragging is limited independently on each axis: a composed-image edge can move inward no further than 40 display pixels from the corresponding preview edge. If the scaled image is small enough to leave at least 40px on both sides, that direction cannot be dragged and is forced to center. This centering also applies after edits, including negative offsets, and after resizing or zooming. Thus the first image remains at document `(0, 0)`, but its on-screen position may change to keep the composed bounds centered or within drag limits.
 
 Download creates a PNG (default) or JPEG at the displayed original pixel dimensions, without preview scaling, workspace margins, or resolution reduction. Only export translates the tight bounds to its output origin. PNG is lossless; JPEG uses high-quality lossy encoding. Both use the chosen opaque background.
 
@@ -49,4 +51,4 @@ Each download uses the document and format at click time. Editing and removing i
 
 ## Subsequent functional scope
 
-Large-image performance optimization, gesture controls, automatic overlap detection, Freeform, persistence, uploads, and advanced editing remain outside the current scope.
+Large-image performance optimization, touchscreen dragging, automatic overlap detection, Freeform, persistence, uploads, and advanced editing remain outside the current scope.

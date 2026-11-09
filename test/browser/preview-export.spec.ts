@@ -107,7 +107,7 @@ test('live numeric edits retain invalid drafts, recover with stepping, and refle
   await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 10 px')
 })
 
-test('preview origin stays stable and downloads ignore camera, viewport and DPR', async ({ page }) => {
+test('locked preview re-centers while downloads ignore camera, viewport and DPR', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await expect(page.getByRole('button', { name: 'Download PNG', exact: true })).toBeDisabled()
@@ -120,15 +120,19 @@ test('preview origin stays stable and downloads ignore camera, viewport and DPR'
   await offset.fill('-10')
   await offset.press('Tab')
   await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 18 × 10 px')
-  await expect.poll(() => matrix(page)).toEqual(before)
+  await expect.poll(() => matrix(page).then(value => value.e)).toBeCloseTo(before.e + ((18 - 8) / 2) * before.a, 5)
   const original = await downloadPNG(page)
   expect({ width: original.width, height: original.height }).toEqual({ width: 18, height: 10 })
   expect(original.pixels.slice((10 * 4), (10 * 4) + 4)).toEqual([255, 0, 0, 255])
   expect(original.pixels.slice((6 * 18) * 4, (6 * 18) * 4 + 4)).toEqual([0, 0, 255, 255])
-  await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+  const canvas = page.getByLabel('Stitched image preview', { exact: true })
+  const box = (await canvas.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.wheel(0, -120)
   await expect.poll(() => matrix(page).then(value => value.a)).toBeGreaterThan(before.a)
-  await page.getByRole('button', { name: 'Pan right', exact: true }).click()
-  await page.getByRole('button', { name: 'Pan up', exact: true }).click()
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2 + 64, box.y + box.height / 2 - 64)
+  await page.mouse.up()
   expect(await downloadPNG(page)).toEqual(original)
   await page.setViewportSize({ width: 375, height: 812 })
   expect(await downloadPNG(page)).toEqual(original)

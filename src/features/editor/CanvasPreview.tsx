@@ -1,27 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
 import Paper from '@mui/material/Paper'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import ZoomIn from '@mui/icons-material/ZoomIn'
-import ZoomOut from '@mui/icons-material/ZoomOut'
-import ArrowBack from '@mui/icons-material/ArrowBack'
-import ArrowForward from '@mui/icons-material/ArrowForward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import { editorStore, useEditorStore } from './store'
 import { calculateComposition } from './composition'
 import { renderComposition } from './renderer'
-import { fitCamera, panCamera, resizeCamera, zoomCamera } from './camera'
+import { constrainCamera, fitCamera, panCamera, resizeCamera, zoomCamera } from './camera'
 import type { Camera, Viewport } from './camera'
 import type { ImageResources } from './resources'
 
-function PreviewAction({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
-  return <Tooltip title={label}><span><IconButton disabled={disabled} size="small" aria-label={label} onClick={onClick}>{children}</IconButton></span></Tooltip>
+function fitPreview(bounds: Parameters<typeof fitCamera>[0], viewport: Viewport, toolbarHeight: number) {
+  // Constraints center fitted content, so reserve toolbar clearance symmetrically.
+  return fitCamera(bounds, { ...viewport, height: Math.max(1, viewport.height - 2 * (toolbarHeight + 16)) })
 }
 
 export default function CanvasPreview({ resources }: { resources: ImageResources }) {
@@ -40,6 +32,77 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
     const target = canvas.current!
     let frame = 0
     let hadImages = false
+    let drag: { id: number; x: number; y: number } | null = null
+    let gestureScale: number | null = null
+
+    function stopDrag(id?: number) {
+      if (!drag || (id !== undefined && id !== drag.id)) return
+      const pointer = drag.id
+      drag = null
+      if (element.hasPointerCapture(pointer)) element.releasePointerCapture(pointer)
+      element.style.cursor = hadImages ? 'grab' : 'default'
+    }
+
+    function currentBounds() {
+      const state = editorStore.getState()
+      try { return calculateComposition(state.images, state.mode).bounds }
+      catch { return null } // The draw path reports invalid composition geometry.
+    }
+
+    function pointerDown(event: PointerEvent) {
+      if (event.pointerType !== 'mouse' || event.button !== 0 || drag || !currentBounds()) return
+      if (event.target instanceof Element && event.target.closest('nav, button, input, a, [role="alert"]')) return
+      event.preventDefault()
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY }
+      element.setPointerCapture(event.pointerId)
+      element.style.cursor = 'grabbing'
+    }
+
+    function pointerMove(event: PointerEvent) {
+      if (!drag || event.pointerId !== drag.id) return
+      if (!(event.buttons & 1)) { stopDrag(event.pointerId); return }
+      const bounds = currentBounds()
+      if (!bounds) { stopDrag(); return }
+      camera.current = constrainCamera(panCamera(camera.current, event.clientX - drag.x, event.clientY - drag.y), bounds, viewport.current)
+      drag.x = event.clientX
+      drag.y = event.clientY
+      requestDraw()
+    }
+
+    function pointerEnd(event: PointerEvent) { stopDrag(event.pointerId) }
+
+    function zoomAt(factor: number, clientX: number, clientY: number) {
+      const bounds = currentBounds()
+      if (!bounds) return
+      const rect = element.getBoundingClientRect()
+      camera.current = constrainCamera(zoomCamera(camera.current, factor, viewport.current, { x: clientX - rect.left, y: clientY - rect.top }), bounds, viewport.current)
+      requestDraw()
+    }
+
+    function wheel(event: WheelEvent) {
+      if (!currentBounds()) return
+      event.preventDefault()
+      if (gestureScale !== null) return
+      const units = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.current.height : 1
+      const delta = Math.max(-1000, Math.min(1000, event.deltaY * units))
+      zoomAt(Math.exp(-delta * (event.ctrlKey ? 0.01 : 0.002)), event.clientX, event.clientY)
+    }
+
+    // Safari exposes trackpad pinch through GestureEvent rather than ctrl+wheel.
+    function gesture(event: Event) {
+      if (event.type === 'gestureend') {
+        if (gestureScale !== null) event.preventDefault()
+        gestureScale = null
+        return
+      }
+      if (!currentBounds()) return
+      event.preventDefault()
+      const pinch = event as Event & { scale: number; clientX: number; clientY: number }
+      if (event.type === 'gesturestart') { gestureScale = 1; return }
+      if (gestureScale === null || !Number.isFinite(pinch.scale) || pinch.scale <= 0) return
+      zoomAt(pinch.scale / gestureScale, pinch.clientX, pinch.clientY)
+      gestureScale = pinch.scale
+    }
 
     function draw() {
       frame = 0
@@ -65,8 +128,11 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
         context.fillRect(0, 0, width, height)
         const document = editorStore.getState()
         const composition = calculateComposition(document.images, document.mode)
-        if (composition.bounds && !hadImages) camera.current = fitCamera(composition.bounds, { ...size, height: Math.max(1, size.height - (toolbar.current?.offsetHeight ?? 0) - 16) })
+        if (composition.bounds && !hadImages) camera.current = fitPreview(composition.bounds, size, toolbar.current?.offsetHeight ?? 0)
+        if (composition.bounds) camera.current = constrainCamera(camera.current, composition.bounds, size)
         hadImages = document.images.length > 0
+        if (!hadImages) { stopDrag(); gestureScale = null }
+        element.style.cursor = hadImages ? drag ? 'grabbing' : 'grab' : 'default'
         context.setTransform(width / size.width, 0, 0, height / size.height, 0, 0)
         context.translate(camera.current.x, camera.current.y)
         context.scale(camera.current.zoom, camera.current.zoom)
@@ -87,12 +153,31 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
     observer.observe(element)
     const unsubscribe = editorStore.subscribe(requestDraw)
     window.addEventListener('resize', requestDraw)
+    element.addEventListener('pointerdown', pointerDown)
+    element.addEventListener('pointermove', pointerMove)
+    element.addEventListener('pointerup', pointerEnd)
+    element.addEventListener('pointercancel', pointerEnd)
+    element.addEventListener('lostpointercapture', pointerEnd)
+    element.addEventListener('wheel', wheel, { passive: false })
+    element.addEventListener('gesturestart', gesture, { passive: false })
+    element.addEventListener('gesturechange', gesture, { passive: false })
+    element.addEventListener('gestureend', gesture, { passive: false })
     requestDraw()
     return () => {
       cancelAnimationFrame(frame)
       observer.disconnect()
       unsubscribe()
       window.removeEventListener('resize', requestDraw)
+      stopDrag()
+      element.removeEventListener('pointerdown', pointerDown)
+      element.removeEventListener('pointermove', pointerMove)
+      element.removeEventListener('pointerup', pointerEnd)
+      element.removeEventListener('pointercancel', pointerEnd)
+      element.removeEventListener('lostpointercapture', pointerEnd)
+      element.removeEventListener('wheel', wheel)
+      element.removeEventListener('gesturestart', gesture)
+      element.removeEventListener('gesturechange', gesture)
+      element.removeEventListener('gestureend', gesture)
       schedule.current = () => {}
     }
   }, [resources])
@@ -102,33 +187,22 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
     schedule.current()
   }
 
-  function panBy(x: number, y: number) {
-    camera.current = panCamera(camera.current, x, y)
-    schedule.current()
-  }
-
   function fit() {
     const state = editorStore.getState()
     const { bounds } = calculateComposition(state.images, state.mode)
-    if (bounds) camera.current = fitCamera(bounds, { ...viewport.current, height: Math.max(1, viewport.current.height - (toolbar.current?.offsetHeight ?? 0) - 16) })
+    if (bounds) camera.current = fitPreview(bounds, viewport.current, toolbar.current?.offsetHeight ?? 0)
     schedule.current()
   }
 
   return (
     <Box ref={container} component="section" aria-label="Stitch preview" sx={{
-      position: 'relative', overflow: 'hidden', bgcolor: '#b5b5b5',
+      position: 'relative', overflow: 'hidden', bgcolor: '#b5b5b5', userSelect: 'none',
       minWidth: 0, minHeight: { xs: 420, md: 0 }, height: '100%',
     }}>
       <Box ref={canvas} component="canvas" aria-label="Stitched image preview" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       {!hasImages && <Typography sx={{ position: 'absolute', top: '45%', width: '100%', textAlign: 'center', px: 2 }}>Add images to preview your stitch.</Typography>}
       {error && <Alert severity="error" sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>{error}</Alert>}
       <Paper ref={toolbar} component="nav" aria-label="Preview controls" sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, p: 0.75, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, width: 'fit-content', maxWidth: 'calc(100% - 32px)' }}>
-        <PreviewAction label="Zoom in" disabled={!hasImages} onClick={() => zoomBy(1.25)}><ZoomIn /></PreviewAction>
-        <PreviewAction label="Zoom out" disabled={!hasImages} onClick={() => zoomBy(0.8)}><ZoomOut /></PreviewAction>
-        <PreviewAction label="Pan left" disabled={!hasImages} onClick={() => panBy(-64, 0)}><ArrowBack /></PreviewAction>
-        <PreviewAction label="Pan right" disabled={!hasImages} onClick={() => panBy(64, 0)}><ArrowForward /></PreviewAction>
-        <PreviewAction label="Pan up" disabled={!hasImages} onClick={() => panBy(0, -64)}><ArrowUpward /></PreviewAction>
-        <PreviewAction label="Pan down" disabled={!hasImages} onClick={() => panBy(0, 64)}><ArrowDownward /></PreviewAction>
         <Button disabled={!hasImages} size="small" onClick={fit}>Fit</Button>
         <Button disabled={!hasImages} size="small" onClick={() => zoomBy(1 / camera.current.zoom)}>100%</Button>
         <Typography variant="caption" aria-label="Preview zoom" sx={{ px: 0.5 }}>{Math.round(zoom * 10000) / 100}%</Typography>
