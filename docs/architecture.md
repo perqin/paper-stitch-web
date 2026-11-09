@@ -28,7 +28,7 @@ The application is entirely client-side: local image import, editing, Canvas 2D 
 
 **CanvasPreview** renders the document on a viewport-sized Canvas 2D surface. Its local camera controls zoom and pan through overlay buttons; device pixel ratio affects only the preview backing store. First import fits the document, subsequent edits preserve the camera, and viewport resizing preserves its center. **camera.ts** contains the pure view transforms. No mouse, wheel, touch, or trackpad gestures are installed.
 
-**ImageCard** presents image metadata and editable offset/crop/rotation controls, plus ordering, removal, and quick-rotate actions. Numeric drafts and validation messages stay local to **NumericField**, with valid values committed on blur or Enter. Memoized cards retain unchanged record references. Reset and Add images sit in a fixed toolbar above the scrolling cards.
+**ImageCard** presents image metadata and editable offset/crop/rotation controls, plus ordering, removal, and quick-rotate actions. **NumericField** commits valid changes immediately, including native spinner and keyboard steps, while retaining incomplete/invalid drafts locally. External value changes synchronize drafts without replacing the focused input. Blur or Enter finalizes text validation. Memoized cards retain unchanged record references. Reset and Add images sit in a fixed toolbar above the scrolling cards.
 
 **DownloadPanel** derives output dimensions through the pure composition module and keeps format, progress, and errors local. Each click captures an independent document snapshot and holds its image resources through encoding. Editing remains available; a second export is blocked until completion. Generated download URLs are temporary.
 

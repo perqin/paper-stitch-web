@@ -54,6 +54,59 @@ test.beforeEach(async ({ page }) => {
   expect(await page.evaluate(() => ({ secure: isSecureContext, uuid: typeof crypto.randomUUID }))).toEqual({ secure: false, uuid: 'undefined' })
 })
 
+test('native spinner clicks apply immediately without blurring or replacing the input', async ({ page }) => {
+  await upload(page)
+  const field = page.getByRole('spinbutton', { name: 'Y offset: second.png', exact: true })
+  await field.hover()
+  const box = (await field.boundingBox())!
+  await field.click({ position: { x: box.width - 5, y: box.height / 2 - 5 } })
+  await expect(field).toHaveValue('1')
+  await expect(field).toBeFocused()
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 11 px')
+  await field.click({ position: { x: box.width - 5, y: box.height / 2 + 5 } })
+  await expect(field).toHaveValue('0')
+  await expect(field).toBeFocused()
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 10 px')
+})
+
+test('focused arrow keys step one pixel repeatedly and commit before blur', async ({ page }) => {
+  await upload(page)
+  const field = page.getByRole('spinbutton', { name: 'Y offset: second.png', exact: true })
+  await field.focus()
+  for (const value of [1, 2, 3]) {
+    await field.press('ArrowUp')
+    await expect(field).toHaveValue(String(value))
+    await expect(field).toBeFocused()
+    await expect(page.getByLabel('Output dimensions')).toHaveText(`Output: 8 × ${10 + value} px`)
+  }
+  await field.press('ArrowDown')
+  await expect(field).toHaveValue('2')
+  await expect(field).toBeFocused()
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 12 px')
+})
+
+test('live numeric edits retain invalid drafts, recover with stepping, and reflect Reset', async ({ page }) => {
+  await upload(page)
+  const field = page.getByRole('spinbutton', { name: 'Top crop: second.png', exact: true })
+  await field.fill('4')
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 10 px')
+  await expect(field).toHaveAttribute('aria-invalid', 'true')
+  await expect(field).toBeFocused()
+  await field.press('ArrowDown')
+  await expect(field).toHaveValue('3')
+  await expect(field).toBeFocused()
+  await expect(field).toHaveAttribute('aria-invalid', 'false')
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 7 px')
+  await field.fill('')
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 7 px')
+  await page.getByRole('button', { name: 'Reset', exact: true }).click()
+  await expect(field).toHaveValue('0')
+  await field.press('ArrowDown')
+  await expect(field).toHaveValue('0')
+  await expect(field).toBeFocused()
+  await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 8 × 10 px')
+})
+
 test('preview origin stays stable and downloads ignore camera, viewport and DPR', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
