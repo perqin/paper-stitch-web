@@ -1,4 +1,4 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Build and deploy the Vite application to GitHub Pages.
 name: Deploy web app to Pages
 
 on:
@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
+  # Build and deploy in one job so only verified output is published.
   deploy:
     environment:
       name: github-pages
@@ -31,13 +31,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check application
+        run: |
+          pnpm lint
+          pnpm test
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v5
+      - name: Build application
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: pnpm build --base "${PAGES_BASE_PATH}/"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # TODO: Build the static files and upload them
-          path: './change-to-build-output-dir'
+          path: './dist'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

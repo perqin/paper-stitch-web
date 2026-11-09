@@ -53,3 +53,7 @@ Run `pnpm test`, `pnpm lint`, and `pnpm build`. Unit tests use Node.js 24's buil
 Install Chromium with `pnpm exec playwright install chromium` (or `install --with-deps chromium` where system libraries are missing), then run `pnpm test:browser`. Playwright starts a separate test server and checks a non-secure HTTP origin at DPR 1 and 2. Native canvas tests compare actual preview/export pixels against an independent crop/rotation/overlap reference. UI tests download real files, verify stable document coordinates and camera-independent output, and exercise deletion during export and recovery from encoding failure.
 
 Development normally occurs directly on the default trunk branch, with one Conventional Commit per assigned task. Commit author and committer are `Y.U.K.I. <yuki-bot@perqin.com>`. Keep workstation-specific hostnames outside tracked configuration.
+
+## Deployment
+
+`.github/workflows/pages.yml` deploys on pushes to `master` or manual dispatch. It installs Node.js 24 and the pnpm version declared in `package.json`, performs a frozen dependency install, runs lint and unit tests, and builds the application. The Vite base path comes from GitHub Pages metadata at build time, supporting repository subpaths without changing local development configuration. Only `dist/` is uploaded and deployed; repository sources and local files are not published as a directory listing.
