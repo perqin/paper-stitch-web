@@ -9,12 +9,17 @@ export interface RenderDocument {
 
 export type ImageSource = (id: string) => CanvasImageSource
 
+export interface RenderOptions {
+  translucentImageId?: string
+}
+
 /** Draw in document coordinates, preserving the caller's camera/DPR transform. */
 export function renderComposition(
   ctx: CanvasRenderingContext2D,
   document: RenderDocument,
   composition: Composition,
   getSource: ImageSource,
+  options?: RenderOptions,
 ): void {
   if (!composition.bounds) return
   ctx.save()
@@ -33,6 +38,7 @@ export function renderComposition(
       const height = image.originalSize.height - image.crop.top - image.crop.bottom
       ctx.save()
       try {
+        ctx.globalAlpha = options?.translucentImageId === image.id ? 0.5 : 1
         ctx.translate(placement.x, placement.y)
         switch (image.rotationDeg) {
           case 0: ctx.transform(1, 0, 0, 1, 0, 0); break

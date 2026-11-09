@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -11,11 +12,13 @@ import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import { editorStore, useEditorStore } from './store'
 import { calculateComposition } from './composition'
 import { exportImage } from './export'
+import { localizeError } from './localizedErrors'
 import type { ExportFormat } from './export'
 import type { ImageResources } from './resources'
 import type { RenderDocument } from './renderer'
 
 export default function DownloadPanel({ resources }: { resources: ImageResources }) {
+  const { t } = useTranslation()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [format, setFormat] = useState<ExportFormat>('PNG')
   const [exporting, setExporting] = useState(false)
@@ -63,16 +66,16 @@ export default function DownloadPanel({ resources }: { resources: ImageResources
 
   return (
     <>
-    <Box component="section" aria-label="Download" sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, pt: 2 }}>
+    <Box component="section" aria-label={t('download')} sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2, pt: 2 }}>
       <Box>
-        <Typography variant="body2" aria-label="Output dimensions" aria-live="polite">{result.error ? 'Output: out of range' : result.size ? `Output: ${result.size.width} × ${result.size.height} px` : 'Output: —'}</Typography>
-        <Typography variant="caption" color="text.secondary">Original pixel dimensions</Typography>
+        <Typography variant="body2" aria-label={t('outputDimensions')} aria-live="polite">{result.error ? t('outputOutOfRange') : result.size ? t('outputSize', result.size) : t('outputEmpty')}</Typography>
+        <Typography variant="caption" color="text.secondary">{t('originalPixels')}</Typography>
       </Box>
-      <ButtonGroup variant="contained" disableElevation aria-label="Download options" sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', sm: 'center' } }}>
-        <Button disabled={!result.size || result.error || exporting} onClick={() => { void download() }} startIcon={<Download />} sx={{ minHeight: 48 }}>{exporting ? 'Exporting…' : `Download ${format}`}</Button>
+      <ButtonGroup variant="contained" disableElevation aria-label={t('downloadOptions')} sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', sm: 'center' } }}>
+        <Button disabled={!result.size || result.error || exporting} onClick={() => { void download() }} startIcon={<Download />} sx={{ minHeight: 48 }}>{exporting ? t('exporting') : t('downloadFormat', { format })}</Button>
         <Button
           disabled={exporting}
-          aria-label="Choose download format" aria-haspopup="menu"
+          aria-label={t('chooseFormat')} aria-haspopup="menu"
           aria-expanded={Boolean(anchor)} aria-controls={anchor ? 'download-formats' : undefined}
           onClick={event => setAnchor(event.currentTarget)} sx={{ px: 1, minWidth: '40px !important' }}
         ><KeyboardArrowDown /></Button>
@@ -83,7 +86,7 @@ export default function DownloadPanel({ resources }: { resources: ImageResources
         ))}
       </Menu>
     </Box>
-    {error && <Alert severity="error" onClose={() => setError('')} sx={{ mt: 1 }}>{error}</Alert>}
+    {error && <Alert severity="error" closeText={t('close')} onClose={() => setError('')} sx={{ mt: 1 }}>{localizeError(error, t)}</Alert>}
     </>
   )
 }

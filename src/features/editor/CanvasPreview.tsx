@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+import { useColorScheme } from '@mui/material/styles'
 import { editorStore, useEditorStore } from './store'
 import { calculateComposition } from './composition'
 import { renderComposition } from './renderer'
+import { getAlignmentImageId } from './alignment'
+import { localizeError } from './localizedErrors'
 import { constrainCamera, fitCamera, panCamera, resizeCamera, zoomCamera } from './camera'
 import type { Camera, Viewport } from './camera'
 import type { ImageResources } from './resources'
@@ -16,7 +20,11 @@ function fitPreview(bounds: Parameters<typeof fitCamera>[0], viewport: Viewport,
   return fitCamera(bounds, { ...viewport, height: Math.max(1, viewport.height - 2 * (toolbarHeight + 16)) })
 }
 
-export default function CanvasPreview({ resources }: { resources: ImageResources }) {
+export default function CanvasPreview({ resources, alignmentEnabled = false }: { resources: ImageResources; alignmentEnabled?: boolean }) {
+  const { t } = useTranslation()
+  const { mode, systemMode } = useColorScheme()
+  const dark = (mode === 'system' ? systemMode : mode) === 'dark'
+  const alignment = useRef(alignmentEnabled)
   const container = useRef<HTMLElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const toolbar = useRef<HTMLElement>(null)
@@ -26,6 +34,11 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
   const hasImages = useEditorStore(state => state.images.length > 0)
   const [zoom, setZoom] = useState(1)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    alignment.current = alignmentEnabled
+    schedule.current()
+  }, [alignmentEnabled, mode, systemMode])
 
   useEffect(() => {
     const element = container.current!
@@ -124,7 +137,7 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
         if (!context) throw new Error('Canvas 2D is not available in this browser.')
         context.setTransform(1, 0, 0, 1, 0, 0)
         context.clearRect(0, 0, width, height)
-        context.fillStyle = '#b5b5b5'
+        context.fillStyle = getComputedStyle(element).backgroundColor
         context.fillRect(0, 0, width, height)
         const document = editorStore.getState()
         const composition = calculateComposition(document.images, document.mode)
@@ -137,7 +150,12 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
         context.translate(camera.current.x, camera.current.y)
         context.scale(camera.current.zoom, camera.current.zoom)
         lease = resources.acquire(document.images.map(image => image.id))
-        renderComposition(context, document, composition, lease.getSource)
+        // Read actual DOM focus at draw time, so blur/unmount cannot leave stale editing state.
+        const focused = window.document.activeElement
+        const focusedId = focused instanceof HTMLInputElement ? focused.dataset.imageId ?? null : null
+        renderComposition(context, document, composition, lease.getSource, {
+          translucentImageId: getAlignmentImageId(composition, focusedId, alignment.current),
+        })
         setError('')
         setZoom(camera.current.zoom)
       } catch (reason) {
@@ -153,6 +171,8 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
     observer.observe(element)
     const unsubscribe = editorStore.subscribe(requestDraw)
     window.addEventListener('resize', requestDraw)
+    document.addEventListener('focusin', requestDraw)
+    document.addEventListener('focusout', requestDraw)
     element.addEventListener('pointerdown', pointerDown)
     element.addEventListener('pointermove', pointerMove)
     element.addEventListener('pointerup', pointerEnd)
@@ -168,6 +188,8 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
       observer.disconnect()
       unsubscribe()
       window.removeEventListener('resize', requestDraw)
+      document.removeEventListener('focusin', requestDraw)
+      document.removeEventListener('focusout', requestDraw)
       stopDrag()
       element.removeEventListener('pointerdown', pointerDown)
       element.removeEventListener('pointermove', pointerMove)
@@ -195,17 +217,17 @@ export default function CanvasPreview({ resources }: { resources: ImageResources
   }
 
   return (
-    <Box ref={container} component="section" aria-label="Stitch preview" sx={{
-      position: 'relative', overflow: 'hidden', bgcolor: '#b5b5b5', userSelect: 'none',
+    <Box ref={container} component="section" aria-label={t('stitchPreview')} sx={{
+      position: 'relative', overflow: 'hidden', bgcolor: dark ? '#27252d' : '#b5b5b5', userSelect: 'none',
       minWidth: 0, minHeight: { xs: 420, md: 0 }, height: '100%',
     }}>
-      <Box ref={canvas} component="canvas" aria-label="Stitched image preview" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {!hasImages && <Typography sx={{ position: 'absolute', top: '45%', width: '100%', textAlign: 'center', px: 2 }}>Add images to preview your stitch.</Typography>}
-      {error && <Alert severity="error" sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>{error}</Alert>}
-      <Paper ref={toolbar} component="nav" aria-label="Preview controls" sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, p: 0.75, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, width: 'fit-content', maxWidth: 'calc(100% - 32px)' }}>
-        <Button disabled={!hasImages} size="small" onClick={fit}>Fit</Button>
+      <Box ref={canvas} component="canvas" aria-label={t('previewCanvas')} sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      {!hasImages && <Typography sx={{ position: 'absolute', top: '45%', width: '100%', textAlign: 'center', px: 2 }}>{t('previewEmpty')}</Typography>}
+      {error && <Alert severity="error" sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>{localizeError(error, t)}</Alert>}
+      <Paper ref={toolbar} component="nav" aria-label={t('previewControls')} sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, p: 0.75, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, width: 'fit-content', maxWidth: 'calc(100% - 32px)' }}>
+        <Button disabled={!hasImages} size="small" onClick={fit}>{t('fit')}</Button>
         <Button disabled={!hasImages} size="small" onClick={() => zoomBy(1 / camera.current.zoom)}>100%</Button>
-        <Typography variant="caption" aria-label="Preview zoom" sx={{ px: 0.5 }}>{Math.round(zoom * 10000) / 100}%</Typography>
+        <Typography variant="caption" aria-label={t('previewZoom')} sx={{ px: 0.5 }}>{Math.round(zoom * 10000) / 100}%</Typography>
       </Paper>
     </Box>
   )

@@ -6,15 +6,17 @@ Paper Stitch is a web-based image stitching tool for paper receipts captured in 
 
 ## Editor workspace
 
-On desktop, the left side is the canvas preview and the right side is a control panel. The image list scrolls independently so that the header, settings, and download area remain available. On narrow screens, the preview and controls stack vertically.
+On desktop, the left side is the canvas preview and the right side is a control panel. The image list scrolls independently so that the header, settings, and download area remain available. Its scrollbar is hidden without reserving a gutter, and rounded image cards use the full panel width. On narrow screens, the preview and controls stack vertically.
 
 The control panel contains, from top to bottom:
 
-1. **Identity:** application logo and the name **Paper Stitch**.
-2. **Stitch mode:** Vertical (default), Horizontal, and Freeform. Freeform is visible but unavailable; it is not planned for the near term.
-3. **Canvas settings:** a background-color label and button.
-4. **Images:** a toolbar above the independently scrollable image list, with **Reset** on the left and **Add images** on the right. Neither button scrolls with the list.
+1. **Identity:** application logo and the name **Paper Stitch**, followed by language, light/dark theme, and GitHub icon buttons. GitHub opens the project repository in a new tab.
+2. **Stitch mode:** Vertical (default) and Horizontal.
+3. **General controls:** background color, a square Reset icon button, and a **Translucent overlaps** checkbox (off by default).
+4. **Images:** a fixed **Add images** button above the independently scrollable image list.
 5. **Download:** final output dimensions in pixels and a split button, with PNG as the default format and JPEG as an alternative.
+
+The interface supports English and Chinese, including field labels, validation, and application errors. It initially chooses the first supported language in the browser's language preferences, falling back to English. The language menu offers **English** and **中文**. The theme initially follows the browser's light/dark preference and reacts to system changes until explicitly switched with the moon/sun button. Explicit language and theme choices are remembered locally; images and edits are not persisted. Neither preference changes the canvas background or exported content.
 
 ## Image controls
 
@@ -45,6 +47,8 @@ Output dimensions update from the current order, crop, rotation, offsets, and st
 
 The left preview renders the current document. Hold the left mouse button anywhere on the image or gray workspace and drag to pan. Scroll the mouse wheel or pinch the trackpad to zoom around the cursor. Wheel events inside a non-empty preview control the image rather than scrolling or zooming the browser page. Fit and 100% remain beside the zoom readout; the pan and +/- zoom buttons are removed. At 100%, one image pixel corresponds to one CSS pixel. First import automatically fits the document.
 
+When **Translucent overlaps** is enabled, focusing an X/Y offset or crop input makes that non-first image 50% opaque only if its placed rectangle overlaps its immediate previous or next neighbor. Edge contact alone is not overlap. Eligibility updates with valid geometry edits; the first image never fades. Leaving the numeric inputs restores normal opacity. This is a preview-only alignment aid: it does not change the document, image resources, background, or PNG/JPEG export.
+
 Dragging is limited independently on each axis: a composed-image edge can move inward no further than 40 display pixels from the corresponding preview edge. If the scaled image is small enough to leave at least 40px on both sides, that direction cannot be dragged and is forced to center. This centering also applies after edits, including negative offsets, and after resizing or zooming. Thus the first image remains at document `(0, 0)`, but its on-screen position may change to keep the composed bounds centered or within drag limits.
 
 Download creates a PNG (default) or JPEG at the displayed original pixel dimensions, without preview scaling, workspace margins, or resolution reduction. Only export translates the tight bounds to its output origin. PNG is lossless; JPEG uses high-quality lossy encoding. Both use the chosen opaque background.
@@ -53,4 +57,4 @@ Each download uses the document and format at click time. Editing and removing i
 
 ## Subsequent functional scope
 
-Large-image performance optimization, touchscreen dragging, automatic overlap detection, Freeform, persistence, uploads, and advanced editing remain outside the current scope.
+Large-image performance optimization, touchscreen dragging, automatic image alignment, document persistence, uploads, and advanced editing remain outside the current scope.

@@ -181,12 +181,18 @@ importers:
       '@mui/material':
         specifier: ^9.5.0
         version: 9.5.0(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      i18next:
+        specifier: ^27.0.1
+        version: 27.0.1(typescript@7.0.2)
       react:
         specifier: ^19.3.1
         version: 19.3.1
       react-dom:
         specifier: ^19.3.1
         version: 19.3.1(react@19.3.1)
+      react-i18next:
+        specifier: ^18.0.0
+        version: 18.0.0(i18next@27.0.1(typescript@7.0.2))(react@19.3.1)(typescript@7.0.2)
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -893,6 +899,18 @@ packages:
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
+  html-parse-stringify@4.0.1:
+    resolution: {integrity: sha512-0zHsZJrK7S3K2aucXWL6ycoYJ/iNtIcFHC/nYQgFklPtrv5LpJctIiSCroWZWeuoXvuyFdzp6KzjJQ+OT5MfFw==}
+
+  i18next@27.0.1:
+    resolution: {integrity: sha512-KaE5ozP8UUeVpOJIwMVbbnpRKpyYQuxd9ZbseJoDzezE3nvLnZZQn20pkzyIJwPI2Uet/Qs3WzPTG812f6F/Eg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      typescript: ^5 || ^6 || ^7
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
     engines: {node: '>=6'}
@@ -1064,6 +1082,17 @@ packages:
     resolution: {integrity: sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==}
     peerDependencies:
       react: ^19.3.1
+
+  react-i18next@18.0.0:
+    resolution: {integrity: sha512-xXq/pcuMRwrW4iH0If/RjbPH3zuEqWVtaw4PjDsG54vx0FTook7aS3kop7DXy3g66wHkYUji8l7ZBrA8kfj67Q==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      i18next: '>= 27.0.0'
+      react: '>= 18.0.0'
+      typescript: ^5 || ^6 || ^7
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -1695,6 +1724,12 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
+  html-parse-stringify@4.0.1: {}
+
+  i18next@27.0.1(typescript@7.0.2):
+    optionalDependencies:
+      typescript: 7.0.2
+
   import-fresh@3.3.1:
     dependencies:
       parent-module: 1.0.1
@@ -1836,6 +1871,14 @@ snapshots:
     dependencies:
       react: 19.3.1
       scheduler: 0.28.0
+
+  react-i18next@18.0.0(i18next@27.0.1(typescript@7.0.2))(react@19.3.1)(typescript@7.0.2):
+    dependencies:
+      html-parse-stringify: 4.0.1
+      i18next: 27.0.1(typescript@7.0.2)
+      react: 19.3.1
+    optionalDependencies:
+      typescript: 7.0.2
 
   react-is@16.13.1: {}
 

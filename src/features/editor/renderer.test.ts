@@ -21,15 +21,22 @@ test('negative bounds do not rebase world placements and later images draw last'
 })
 
 test('missing sources and draw failures throw while restoring caller state', () => {
-  for (const failure of ['missing', 'lookup', 'draw']) {
-    const { ctx, stack } = recorder()
-    if (failure === 'draw') ctx.drawImage = () => { throw new Error('draw failed') }
-    assert.throws(() => renderComposition(ctx, { images: [image()], mode: 'vertical', backgroundColor: '#fff' }, calculateComposition([image()], 'vertical'), () => {
-      if (failure === 'lookup') throw new Error('lookup failed')
-      return failure === 'missing' ? undefined as unknown as CanvasImageSource : {} as CanvasImageSource
-    }), failure === 'missing' ? /Missing image source/ : /failed/)
-    assert.equal(stack.length, 0)
-    assert.equal(ctx.globalAlpha, 0.4)
+  for (const options of [undefined, { translucentImageId: 'a' }]) {
+    for (const failure of ['missing', 'lookup', 'draw']) {
+      const { ctx, stack } = recorder()
+      if (failure === 'draw') ctx.drawImage = () => {
+        assert.equal(ctx.globalAlpha, options ? 0.5 : 1)
+        throw new Error('draw failed')
+      }
+      assert.throws(() => renderComposition(ctx, { images: [image()], mode: 'vertical', backgroundColor: '#fff' }, calculateComposition([image()], 'vertical'), () => {
+        if (failure === 'lookup') throw new Error('lookup failed')
+        return failure === 'missing' ? undefined as unknown as CanvasImageSource : {} as CanvasImageSource
+      }, options), failure === 'missing' ? /Missing image source/ : /failed/)
+      assert.equal(stack.length, 0)
+      assert.equal(ctx.globalAlpha, 0.4)
+      assert.equal(ctx.globalCompositeOperation, 'multiply')
+      assert.equal(ctx.fillStyle, 'old')
+    }
   }
 })
 
@@ -37,6 +44,38 @@ test('empty composition is a no-op', () => {
   const { ctx, calls } = recorder()
   renderComposition(ctx, { images: [], mode: 'vertical', backgroundColor: '#fff' }, calculateComposition([], 'vertical'), () => { throw new Error('unexpected lookup') })
   assert.deepEqual(calls, [])
+})
+
+test('preview opacity applies only to the requested image and never the background', () => {
+  const images = [image('a'), image('b'), image('c')]
+  const document = { images, mode: 'vertical' as const, backgroundColor: '#fff' }
+  const { ctx, calls, stack } = recorder()
+  renderComposition(ctx, document, calculateComposition(images, 'vertical'), () => ({} as CanvasImageSource), { translucentImageId: 'b' })
+  assert.deepEqual(calls.filter((call) => call[0] === 'drawImage').map((call) => call.slice(-2)), [
+    [1, 'source-over'], [0.5, 'source-over'], [1, 'source-over'],
+  ])
+  assert.deepEqual(calls.find((call) => call[0] === 'fillRect')?.slice(-2), [1, 'source-over'])
+  assert.equal(ctx.globalAlpha, 0.4)
+  assert.equal(ctx.globalCompositeOperation, 'multiply')
+  assert.equal(ctx.fillStyle, 'old')
+  assert.equal(stack.length, 0)
+})
+
+test('omitted, empty, and unmatched options produce identical opaque draw operations', () => {
+  const images = [image('a'), image('b')]
+  const document = { images, mode: 'vertical' as const, backgroundColor: '#fff' }
+  const layout = calculateComposition(images, document.mode)
+  const source = {} as CanvasImageSource
+  const operations = [undefined, {}, { translucentImageId: 'missing' }].map((options) => {
+    const { ctx, calls } = recorder()
+    renderComposition(ctx, document, layout, () => source, options)
+    assert.deepEqual(calls.filter((call) => call[0] === 'drawImage').map((call) => call.slice(-2)), [
+      [1, 'source-over'], [1, 'source-over'],
+    ])
+    return calls
+  })
+  assert.deepEqual(operations[1], operations[0])
+  assert.deepEqual(operations[2], operations[0])
 })
 
 // Records Canvas2D operations/state, not rasterized pixels.

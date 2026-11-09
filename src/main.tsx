@@ -6,13 +6,14 @@ import '@fontsource/roboto/300.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
+import './i18n.ts'
 import App from './App.tsx'
 import theme from './theme.ts'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeProvider theme={theme} defaultMode="system" noSsr>
+      <CssBaseline enableColorScheme />
       <App />
     </ThemeProvider>
   </StrictMode>,
