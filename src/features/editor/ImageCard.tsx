@@ -1,10 +1,8 @@
 import { memo } from 'react'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
@@ -31,7 +29,7 @@ export default memo(function ImageCard({ image, previewUrl, first, last, onRemov
   }
   return (
     <Paper component="li" variant="outlined" aria-label={image.name} sx={{ listStyle: 'none', p: 1.5, borderRadius: 0 }}>
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2 }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1.5 }}>
         <Box component="img" src={previewUrl} alt={`Thumbnail of ${image.name}`} sx={{ width: 48, height: 48, objectFit: 'cover', objectPosition: 'top', bgcolor: 'grey.200', flexShrink: 0 }} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="body2" noWrap title={image.name}>{image.name}</Typography>
@@ -49,27 +47,21 @@ export default memo(function ImageCard({ image, previewUrl, first, last, onRemov
           ))}
         </Stack>
       </Stack>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
-        {(['x', 'y'] as const).map(axis => (
-          <NumericField key={`${axis}:${first}`} label={`${axis.toUpperCase()} offset`} imageName={image.name} value={first ? 0 : image.offset[axis]} disabled={first}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', columnGap: 1, rowGap: 1.5 }}>
+        {!first && (['x', 'y'] as const).map(axis => (
+          <NumericField key={axis} label={`${axis.toUpperCase()} offset`} shortLabel={axis.toUpperCase()} imageName={image.name} value={image.offset[axis]}
             commit={value => commit('offset', axis, value)} />
         ))}
-        {(['top', 'bottom', 'left', 'right'] as const).map(edge => (
-          <NumericField key={edge} label={`${edge[0].toUpperCase()}${edge.slice(1)} crop`} imageName={image.name} value={image.crop[edge]} crop
-            commit={value => commit('crop', edge, value)} />
-        ))}
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <TextField
-            select fullWidth label="Rotation" value={image.rotationDeg}
-            onChange={event => editorStore.getState().updateImage(image.id, { rotationDeg: Number(event.target.value) as Rotation })}
-            slotProps={{ select: { SelectDisplayProps: { 'aria-label': `Rotation: ${image.name}`, 'aria-labelledby': undefined } } }}
-          >
-            {[0, 90, 180, 270].map(angle => <MenuItem key={angle} value={angle}>{angle}°</MenuItem>)}
-          </TextField>
+        <Stack role="group" aria-label={`Rotation controls: ${image.name}`} direction="row" spacing={1} sx={{ gridColumn: '3 / span 2', minWidth: 0, minHeight: 40, alignItems: 'center', justifyContent: 'flex-end' }}>
+          <Typography variant="body2" aria-label={`Rotation: ${image.name}`} aria-live="polite" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>Rotation {image.rotationDeg}°</Typography>
           <Tooltip title="Rotate 90° clockwise">
             <IconButton onClick={() => editorStore.getState().updateImage(image.id, { rotationDeg: ((image.rotationDeg + 90) % 360) as Rotation })} aria-label={`Rotate 90°: ${image.name}`} size="small" sx={{ border: 1, borderColor: 'divider' }}><RotateRight fontSize="small" /></IconButton>
           </Tooltip>
         </Stack>
+        {(['top', 'bottom', 'left', 'right'] as const).map(edge => (
+          <NumericField key={edge} label={`${edge[0].toUpperCase()}${edge.slice(1)} crop`} shortLabel={`${edge[0].toUpperCase()}${edge.slice(1)}`} imageName={image.name} value={image.crop[edge]} crop
+            commit={value => commit('crop', edge, value)} />
+        ))}
       </Box>
     </Paper>
   )

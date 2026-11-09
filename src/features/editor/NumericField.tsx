@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
 
 interface NumericFieldProps {
   label: string
+  shortLabel?: string
   imageName: string
   value: number
   crop?: boolean
@@ -11,7 +11,7 @@ interface NumericFieldProps {
   commit: (value: number) => boolean
 }
 
-export default function NumericField({ label, imageName, value, crop = false, disabled = false, commit }: NumericFieldProps) {
+export default function NumericField({ label, shortLabel = label, imageName, value, crop = false, disabled = false, commit }: NumericFieldProps) {
   const [draft, setDraft] = useState(String(value))
   const [error, setError] = useState('')
   const [previousValue, setPreviousValue] = useState(value)
@@ -40,11 +40,11 @@ export default function NumericField({ label, imageName, value, crop = false, di
 
   return (
     <TextField
-      fullWidth disabled={disabled} label={label} value={draft} type="number" error={Boolean(error)} helperText={error || undefined}
+      fullWidth size="small" disabled={disabled} label={shortLabel} value={draft} type="number" error={Boolean(error)} helperText={error || undefined}
+      sx={{ minWidth: 0, '& .MuiInputBase-input': { px: 0.75, fontSize: 14, fontVariantNumeric: 'tabular-nums' }, '& .MuiInputLabel-root': { fontSize: 14 }, '& .MuiFormHelperText-root': { mx: 0 } }}
       onChange={event => apply(event.target.value)} onBlur={() => apply(draft, true)}
       onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.querySelector('input')?.blur() }}
       slotProps={{
-        input: { endAdornment: <InputAdornment position="end">px</InputAdornment> },
         htmlInput: { 'aria-label': `${label}: ${imageName}`, step: 1, ...(crop ? { min: 0 } : {}) },
       }}
     />

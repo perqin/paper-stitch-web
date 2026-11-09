@@ -22,10 +22,12 @@ Each image card shows a thumbnail, filename, and original width and height in pi
 
 - Horizontal (X) and vertical (Y) offsets, in pixels.
 - Inward crop amounts for top, bottom, left, and right edges, in pixels.
-- A rotation selector limited to clockwise `0°`, `90°`, `180°`, and `270°`, and a quick-rotate control.
+- A current-angle readout and a button that rotates clockwise by `90°`, cycling through `0°`, `90°`, `180°`, and `270°`; no angle dropdown.
 - Move up, move down, and remove actions.
 
-List order is both stitch and draw order: later images paint over earlier ones where they overlap. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. The first image is fixed at document `(0, 0)` and its offset inputs are disabled. Later images' offsets adjust automatic stitch positions, not absolute canvas coordinates. Reordering preserves edits; a saved offset is inactive while its image is first and becomes active again if moved later.
+The parameter area uses two compact rows and four equal columns. X and Y occupy the first two columns of the upper row, with the rotation readout/button spanning the right half. Top, Bottom, Left, and Right crop share the lower row. Small input fields omit the `px` suffix, use short visible labels, and retain descriptive accessible names. Values remain whole image pixels.
+
+List order is both stitch and draw order: later images paint over earlier ones where they overlap. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. The first image is fixed at document `(0, 0)` and its offset inputs are hidden, leaving the upper-left half empty and rotation on the right. Later images' offsets adjust automatic stitch positions, not absolute canvas coordinates. Reordering preserves edits; a saved offset is inactive while its image is first and becomes active again if moved later.
 
 Changing stitch mode resets every image's X/Y offsets, four crop amounts, and rotation to zero. Reset performs the same reset without changing mode. Both preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for data structure and composition details. Selecting the active mode does not reset edits.
 
@@ -33,7 +35,7 @@ Changing stitch mode resets every image's X/Y offsets, four crop amounts, and ro
 
 The right panel starts with no images. Add images opens a multi-file picker and decodes browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. No images are uploaded or persisted.
 
-Offsets and inward crops accept whole pixels and apply valid changes immediately. Native input arrows and focused Up/Down keys step by one pixel without losing focus; preview and output dimensions update without waiting for blur. Incomplete text remains a local draft, and invalid values never replace the last valid document value. Blur or Enter finalizes text and reports incomplete input. Crop must leave at least one pixel on each axis. Rotation selection and the quick-rotate button support quarter-turns only. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
+Offsets and inward crops accept whole pixels and apply valid changes immediately. Native input arrows and focused Up/Down keys step by one pixel without losing focus; preview and output dimensions update without waiting for blur. Incomplete text remains a local draft, and invalid values never replace the last valid document value. Blur or Enter finalizes text and reports incomplete input. Crop must leave at least one pixel on each axis. The rotate button advances one clockwise quarter-turn per click. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
 
 The background button opens the browser color picker and stores an opaque color, initially white, used by both preview and export. Transparent parts of imported images reveal the background or preceding images.
 
