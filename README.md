@@ -1,3 +1,5 @@
+<img src="public/paper-stitch.svg" width="96" height="96" alt="Paper Stitch icon" />
+
 # Paper Stitch Web
 
 React + TypeScript web app powered by Vite.

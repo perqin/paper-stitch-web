@@ -18,6 +18,7 @@ The application is entirely client-side: local image import, editing, Canvas 2D 
 | `src/main.tsx` | React bootstrap, global theme, baseline, and font imports. |
 | `src/App.tsx` | Application entry into the editor. |
 | `src/theme.ts` | Shared palette, typography, and component defaults. |
+| `public/paper-stitch.svg` | Shared app icon for README, header, and favicon; header URLs respect Vite's deployment base. |
 | `src/features/editor/` | Editor workspace and its presentation components. |
 | `src/features/editor/assets/` | Bundled design-reference sample scans. |
 | `docs/` | Human-readable product and architecture documentation. |

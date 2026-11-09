@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <title>Paper Stitch</title>
+  <desc>Coral and aqua paper strips overlap on a rounded charcoal tile.</desc>
+  <defs>
+    <linearGradient id="tile" x1="12" y1="0" x2="112" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B5666"/>
+      <stop offset="1" stop-color="#2C2938"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="24" y1="0" x2="92" y2="74" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD6CF"/>
+      <stop offset="1" stop-color="#EEA1AC"/>
+    </linearGradient>
+    <linearGradient id="aqua" x1="40" y1="60" x2="106" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D0F7F2"/>
+      <stop offset="1" stop-color="#8BD1DE"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.12"/>
+    </linearGradient>
+    <clipPath id="tile-clip"><rect width="128" height="128" rx="20"/></clipPath>
+    <filter id="paper-shadow" x="-30%" y="-30%" width="170%" height="180%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="#211B30" flood-opacity="0.18"/>
+      <feDropShadow dx="1" dy="6" stdDeviation="5" flood-color="#211B30" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <g clip-path="url(#tile-clip)">
+    <rect width="128" height="128" rx="20" fill="url(#tile)"/>
+    <rect x="16" y="-26" width="80" height="96" rx="9" fill="url(#coral)" filter="url(#paper-shadow)"/>
+    <path d="M17 0v61a8 8 0 0 0 8 8h62" stroke="#FFF3ED" stroke-opacity="0.45" stroke-width="2"/>
+    <rect x="32" y="60" width="80" height="96" rx="9" fill="url(#aqua)" filter="url(#paper-shadow)"/>
+    <path d="M33 128V69a8 8 0 0 1 8-8h62a8 8 0 0 1 8 8" stroke="#F1FFFC" stroke-opacity="0.7" stroke-width="2"/>
+    <rect x="1" y="1" width="126" height="126" rx="19" stroke="url(#rim)" stroke-width="2"/>
+  </g>
+</svg>

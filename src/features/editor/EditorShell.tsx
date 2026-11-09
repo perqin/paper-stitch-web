@@ -12,7 +12,6 @@ import RestartAlt from '@mui/icons-material/RestartAlt'
 import MoreVert from '@mui/icons-material/MoreVert'
 import MoreHoriz from '@mui/icons-material/MoreHoriz'
 import OpenWith from '@mui/icons-material/OpenWith'
-import ReceiptLong from '@mui/icons-material/ReceiptLong'
 import CanvasPreview from './CanvasPreview'
 import DownloadPanel from './DownloadPanel'
 import ImageCard from './ImageCard'
@@ -66,7 +65,7 @@ export default function EditorShell() {
       <CanvasPreview resources={imageResources} />
       <Box component="aside" aria-label="Stitch controls" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: { xs: 850, md: '100%' } }}>
         <Stack component="header" direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2.5 }}>
-          <Box sx={{ display: 'flex', p: 1, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText' }}><ReceiptLong aria-hidden="true" /></Box>
+          <Box component="img" src={`${import.meta.env.BASE_URL}paper-stitch.svg`} alt="Paper Stitch icon" width={40} height={40} sx={{ display: 'block', flexShrink: 0 }} />
           <Typography component="h1" variant="h6" sx={{ flex: 1 }}>Paper Stitch</Typography>
         </Stack>
         <ToggleButtonGroup
