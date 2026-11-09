@@ -49,13 +49,15 @@ These semantics are pure geometry shared by preview and export. Stored offsets a
 | Zustand document store | Mode, background, ordered metadata and committed edits; synchronous immutable actions. |
 | Import/resource controller | File selection and decoding, source `File`s, preview URLs and decoded resources keyed by image ID, import progress/errors, cancellation and cleanup. |
 | Composition module | Pure derivation of cropped/rotated bounds, placed rectangles and output dimensions from the document. Shared by preview and export; not stored as a second source of truth. |
-| React components | Menu anchors, selected download format, color-picker visibility, numeric text drafts, validation keys, overlap-help checkbox, and the preview's independent camera. The actual active numeric input supplies the focused image ID at draw time. |
+| React components | Menu/help dialog state, pending confirmation action, selected download format, color-picker visibility, numeric text drafts, validation keys, overlap-help switch, and the preview's independent camera. The actual active numeric input supplies the focused image ID at draw time. |
 | i18next / MUI color scheme | Active UI language and light/dark mode; initially browser-derived, with explicit choices persisted independently of document data. |
 | DownloadPanel / export module | Local encoding progress/error, a click-time document/format snapshot, and retained source leases. No generated blobs in the document store. |
 
 Store actions are the only document mutation interface: change mode (with parameter reset), reset all positioning parameters, change background, append decoded images, update one image's edit parameters, move an image up/down, and remove an image. Do not expose a generic arbitrary document patch action. Crop must leave a positive source area; offsets/crops must be finite integers, and rotation must be one of the four supported angles. An invalid edit leaves the last valid document unchanged; components may temporarily display incomplete text such as a minus sign while editing.
 
-Overlap assistance is off by default and never stored with image metadata. While enabled, a focused offset/crop input can make its non-first image 50% opaque in the preview if the cropped/rotated placed rectangle has positive-area overlap with an immediate neighbor. Blur restores opacity. Reset preserves UI preferences and the checkbox while clearing image edits/drafts; any remaining eligibility is recomputed from the new geometry and actual focus. Export remains fully opaque with respect to this aid.
+Overlap assistance is on by default and never stored with image metadata. While enabled, a focused offset/crop input can make its non-first image 50% opaque in the preview if the cropped/rotated placed rectangle has positive-area overlap with an immediate neighbor. Blur restores opacity. Confirmed Reset preserves UI preferences and the switch while clearing image edits/drafts; any remaining eligibility is recomputed from the new geometry and actual focus. Export remains fully opaque with respect to this aid.
+
+UI mode changes, Reset, and removal require confirmation before invoking store/resource actions. Pending actions are not document mutations; cancelling preserves committed edits, drafts, and resources. The pending removal target uses its stable image ID, not its filename or list position. Domain actions themselves remain synchronous and free of dialog/UI state.
 
 ## Resource lifecycle and asynchronous work
 

@@ -18,7 +18,10 @@ function initialLanguage(): Language {
 }
 
 function updateDocumentLanguage(language: string) {
-  if (typeof document !== 'undefined') document.documentElement.lang = language
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = language
+    document.title = i18n.t('productName', { lng: language })
+  }
 }
 
 i18n.on('languageChanged', updateDocumentLanguage)

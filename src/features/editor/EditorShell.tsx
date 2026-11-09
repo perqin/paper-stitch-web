@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
 import Divider from '@mui/material/Divider'
+import Fab from '@mui/material/Fab'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Stack from '@mui/material/Stack'
+import Switch from '@mui/material/Switch'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
@@ -15,14 +16,18 @@ import RestartAlt from '@mui/icons-material/RestartAlt'
 import MoreVert from '@mui/icons-material/MoreVert'
 import MoreHoriz from '@mui/icons-material/MoreHoriz'
 import CanvasPreview from './CanvasPreview'
+import ConfirmDialog from './ConfirmDialog'
 import DownloadPanel from './DownloadPanel'
 import HeaderActions from './HeaderActions'
 import ImageCard from './ImageCard'
 import { localizeError } from './localizedErrors'
 import { editorStore, useEditorStore } from './store'
 import { createImageResources } from './resources'
+import type { StitchMode } from './model'
 
 const imageResources = createImageResources(() => editorStore.getState())
+
+type PendingAction = { kind: 'reset' } | { kind: 'mode'; mode: StitchMode } | { kind: 'remove'; id: string; name: string }
 
 export default function EditorShell() {
   const { t } = useTranslation()
@@ -32,7 +37,8 @@ export default function EditorShell() {
   const [resetGeneration, setResetGeneration] = useState(0)
   const [importing, setImporting] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
-  const [alignmentEnabled, setAlignmentEnabled] = useState(false)
+  const [alignmentEnabled, setAlignmentEnabled] = useState(true)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const picker = useRef<HTMLInputElement>(null)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -44,9 +50,21 @@ export default function EditorShell() {
 
   function changeMode(value: string | null) {
     if ((value === 'vertical' || value === 'horizontal') && value !== mode) {
-      editorStore.getState().setMode(value)
-      setResetGeneration(generation => generation + 1)
+      setPendingAction({ kind: 'mode', mode: value })
     }
+  }
+
+  const requestRemoval = useCallback((id: string) => {
+    const image = editorStore.getState().images.find(image => image.id === id)
+    if (image) setPendingAction({ kind: 'remove', id, name: image.name })
+  }, [])
+
+  function confirmAction() {
+    if (!pendingAction) return
+    if (pendingAction.kind === 'reset') reset()
+    else if (pendingAction.kind === 'remove') imageResources.removeImage(pendingAction.id)
+    else if (editorStore.getState().setMode(pendingAction.mode)) setResetGeneration(generation => generation + 1)
+    setPendingAction(null)
   }
 
   async function importFiles(files: File[]) {
@@ -70,9 +88,9 @@ export default function EditorShell() {
     }}>
       <CanvasPreview resources={imageResources} alignmentEnabled={alignmentEnabled} />
       <Box component="aside" aria-label={t('stitchControls')} sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: { xs: 850, md: '100%' } }}>
-        <Stack component="header" direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2.5 }}>
+        <Stack component="header" direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2.5 }}>
           <Box component="img" src={`${import.meta.env.BASE_URL}paper-stitch.svg`} alt={t('iconAlt')} width={40} height={40} sx={{ display: 'block', flexShrink: 0 }} />
-          <Typography component="h1" variant="h6" sx={{ flex: 1, minWidth: 0 }}>Paper Stitch</Typography>
+          <Typography component="h1" variant="h6" sx={{ flex: 1, minWidth: 0, fontSize: { xs: 18, sm: 20 }, whiteSpace: 'nowrap' }}>{t('productName')}</Typography>
           <HeaderActions />
         </Stack>
         <ToggleButtonGroup
@@ -85,41 +103,48 @@ export default function EditorShell() {
         </ToggleButtonGroup>
         <Stack component="section" aria-label={t('generalControls')} spacing={1} sx={{ mb: 2 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ flex: 1 }}>{t('canvasBackground')}</Typography>
+            <Typography variant="body2" sx={{ flex: 1 }}>{t('background')}</Typography>
             <Button component="label" variant="outlined" size="small" sx={{ position: 'relative', minHeight: 36 }} startIcon={<Box sx={{ width: 16, height: 16, bgcolor: backgroundColor, border: 1, borderColor: 'divider', borderRadius: 0.5 }} />}>
               {backgroundColor}
               <Box component="input" type="color" aria-label={t('backgroundColor')} value={backgroundColor}
                 onChange={event => editorStore.getState().setBackgroundColor(event.target.value)}
                 sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
             </Button>
-            <Button disabled={!images.length} onClick={reset} variant="outlined" aria-label={t('reset')} title={t('resetHint')} sx={{ width: 36, height: 36, minWidth: 36, p: 0, borderRadius: 1 }}><RestartAlt fontSize="small" /></Button>
+            <Button disabled={!images.length} onClick={() => setPendingAction({ kind: 'reset' })} variant="outlined" size="small" startIcon={<RestartAlt fontSize="small" />} title={t('resetHint')} sx={{ minHeight: 36, borderRadius: 1 }}>{t('reset')}</Button>
           </Stack>
           <FormControlLabel
-            control={<Checkbox size="small" checked={alignmentEnabled} onChange={event => setAlignmentEnabled(event.target.checked)} />}
+            control={<Switch size="small" slotProps={{ input: { role: 'switch' } }} checked={alignmentEnabled} onChange={event => setAlignmentEnabled(event.target.checked)} />}
             label={t('translucentOverlaps')} title={t('overlapHint')}
-            sx={{ m: 0, '& .MuiCheckbox-root': { p: 0.5, mr: 0.5 }, '& .MuiFormControlLabel-label': { typography: 'body2' } }}
+            sx={{ m: 0, gap: 0.5, '& .MuiFormControlLabel-label': { typography: 'body2' } }}
           />
         </Stack>
         <Divider />
-        <Typography variant="caption" color="text.secondary" sx={{ py: 1 }}>{t('placementHint')}</Typography>
-        <Stack direction="row" spacing={1.5} sx={{ pb: 2 }}>
-          <Button disabled={importing} onClick={() => picker.current?.click()} fullWidth variant="contained" startIcon={<Add />}>{importing ? t('importing') : t('addImages')}</Button>
-        </Stack>
+
         <input ref={picker} hidden type="file" multiple accept="image/*" aria-label={t('importImages')} onChange={event => {
           const files = Array.from(event.target.files ?? [])
           event.target.value = ''
           void importFiles(files)
         }} />
-        <Box component="section" aria-label={t('importedImages')} tabIndex={0} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pb: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+        <Box component="section" aria-label={t('importedImages')} tabIndex={0} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', py: 2, display: 'flex', flexDirection: 'column', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
           {errors.length > 0 && <Alert severity="error" closeText={t('close')} onClose={() => setErrors([])} sx={{ mb: 2 }}>{errors.map((error, index) => <Typography key={index} variant="body2">{localizeError(error, t)}</Typography>)}</Alert>}
-          {!images.length && <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>{t('emptyImages')}</Typography>}
-          <Stack component="ul" spacing={2.75} sx={{ m: 0, p: 0 }}>
-            {images.map((image, index) => <ImageCard key={`${image.id}:${resetGeneration}`} image={image} previewUrl={imageResources.getUrl(image.id)} first={index === 0} last={index === images.length - 1} onRemove={imageResources.removeImage} />)}
-          </Stack>
+          {!images.length ? <Stack spacing={2} sx={{ flex: 1, minHeight: 160, alignItems: 'center', justifyContent: 'center', py: 3 }}>
+            <Fab size="large" color="primary" disabled={importing} onClick={() => picker.current?.click()} aria-label={importing ? t('importing') : t('addImages')}><Add fontSize="large" /></Fab>
+            <Typography variant="body2" color="text.secondary">{t('emptyImages')}</Typography>
+          </Stack> : <>
+            <Stack component="ul" spacing={2.75} sx={{ m: 0, p: 0, flexShrink: 0 }}>
+              {images.map((image, index) => <ImageCard key={`${image.id}:${resetGeneration}`} image={image} previewUrl={imageResources.getUrl(image.id)} first={index === 0} last={index === images.length - 1} onRemove={requestRemoval} />)}
+            </Stack>
+            <Button disabled={importing} onClick={() => picker.current?.click()} fullWidth variant="contained" startIcon={<Add />} sx={{ mt: 2.75, flexShrink: 0 }}>{importing ? t('importing') : t('addImages')}</Button>
+          </>}
         </Box>
         <Divider />
         <DownloadPanel resources={imageResources} />
       </Box>
+      {pendingAction && <ConfirmDialog
+        title={t(pendingAction.kind === 'remove' ? 'removeTitle' : pendingAction.kind === 'mode' ? 'changeModeTitle' : 'resetTitle')}
+        description={pendingAction.kind === 'remove' ? t('removeWarning', { name: pendingAction.name }) : t('clearPositioning')}
+        destructive={pendingAction.kind === 'remove'} onConfirm={confirmAction} onClose={() => setPendingAction(null)}
+      />}
     </Box>
   )
 }

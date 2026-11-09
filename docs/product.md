@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Paper Stitch is a web-based image stitching tool for paper receipts captured in multiple scanner passes. Users arrange the scans, adjust their visible regions and alignment, then save one continuous image, much like a long screenshot.
+Paper Stitch (拼纸条 in Chinese) is a web-based tool for stitching screenshots and paper receipts captured in multiple scanner passes. Users arrange the images, adjust their visible regions and alignment, then save one continuous image, much like a long screenshot.
 
 ## Editor workspace
 
@@ -10,10 +10,10 @@ On desktop, the left side is the canvas preview and the right side is a control 
 
 The control panel contains, from top to bottom:
 
-1. **Identity:** application logo and the name **Paper Stitch**, followed by language, light/dark theme, and GitHub icon buttons. GitHub opens the project repository in a new tab.
+1. **Identity:** application logo and localized product name, followed by language, light/dark theme, GitHub, and help icon buttons. GitHub opens the project repository in a new tab. Help briefly explains the purpose and privacy model: images stay in browser memory and are never uploaded.
 2. **Stitch mode:** Vertical (default) and Horizontal.
-3. **General controls:** background color, a square Reset icon button, and a **Translucent overlaps** checkbox (off by default).
-4. **Images:** a fixed **Add images** button above the independently scrollable image list.
+3. **General controls:** **Background** color, a labeled **Reset** button, and a **Translucent overlaps** switch (on by default).
+4. **Images:** an independently scrollable list with **Add images** after the last card. An empty list instead centers a large floating action button with a short click-to-add hint below it.
 5. **Download:** final output dimensions in pixels and a split button, with PNG as the default format and JPEG as an alternative.
 
 The interface supports English and Chinese, including field labels, validation, and application errors. It initially chooses the first supported language in the browser's language preferences, falling back to English. The language menu offers **English** and **中文**. The theme initially follows the browser's light/dark preference and reacts to system changes until explicitly switched with the moon/sun button. Explicit language and theme choices are remembered locally; images and edits are not persisted. Neither preference changes the canvas background or exported content.
@@ -31,11 +31,11 @@ The parameter area uses two compact rows and four equal columns. X and Y occupy 
 
 List order is both stitch and draw order: later images paint over earlier ones where they overlap. Coordinates start at the top-left, with positive X pointing right and positive Y pointing down. The first image is fixed at document `(0, 0)` and its offset inputs are hidden, leaving the upper-left half empty and rotation on the right. Later images' offsets adjust automatic stitch positions, not absolute canvas coordinates. Reordering preserves edits; a saved offset is inactive while its image is first and becomes active again if moved later.
 
-Changing stitch mode resets every image's X/Y offsets, four crop amounts, and rotation to zero. Reset performs the same reset without changing mode. Both preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for data structure and composition details. Selecting the active mode does not reset edits.
+Changing stitch mode and clicking Reset first open a confirmation dialog warning that all offsets, crops, and rotations will be cleared. Only confirmation resets those parameters; Cancel, Escape, or backdrop dismissal preserves edits and drafts. Reset does not change mode. Both operations preserve the images, their order, and canvas background. Crop is applied before quarter-turn rotation; see the [state model](state-model.md) for data structure and composition details. Selecting the active mode is a no-op without a dialog. The red trash action also requires confirmation before removing its selected image.
 
 ## Import and editing
 
-The right panel starts with no images. Add images opens a multi-file picker and decodes browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. No images are uploaded or persisted.
+The right panel starts with no images. Both the empty-list floating action button and the trailing Add images button open a multi-file picker and decode browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. Images live only in browser memory and are not uploaded or persisted.
 
 Offsets and inward crops accept whole pixels and apply valid changes immediately. Native input arrows and focused Up/Down keys step by one pixel without losing focus; preview and output dimensions update without waiting for blur. Incomplete text remains a local draft, and invalid values never replace the last valid document value. Blur or Enter finalizes text and reports incomplete input. Crop must leave at least one pixel on each axis. The rotate button advances one clockwise quarter-turn per click. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
 

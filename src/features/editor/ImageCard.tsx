@@ -39,12 +39,12 @@ export default memo(function ImageCard({ image, previewUrl, first, last, onRemov
         </Box>
         <Stack direction="row" spacing={0.5}>
           {[
-            { label: t('moveUp'), icon: <KeyboardArrowUp fontSize="small" />, disabled: first, run: () => editorStore.getState().moveImage(image.id, 'up') },
-            { label: t('moveDown'), icon: <KeyboardArrowDown fontSize="small" />, disabled: last, run: () => editorStore.getState().moveImage(image.id, 'down') },
-            { label: t('removeImage'), icon: <Delete fontSize="small" />, disabled: false, run: () => onRemove(image.id) },
+            { label: t('moveUp'), color: 'default' as const, icon: <KeyboardArrowUp fontSize="small" />, disabled: first, run: () => editorStore.getState().moveImage(image.id, 'up') },
+            { label: t('moveDown'), color: 'default' as const, icon: <KeyboardArrowDown fontSize="small" />, disabled: last, run: () => editorStore.getState().moveImage(image.id, 'down') },
+            { label: t('removeImage'), color: 'error' as const, icon: <Delete fontSize="small" />, disabled: false, run: () => onRemove(image.id) },
           ].map(action => (
             <Tooltip key={action.label} title={action.label}>
-              <span><IconButton disabled={action.disabled} onClick={action.run} size="small" aria-label={t('fieldLabel', { label: action.label, name: image.name })} sx={{ bgcolor: 'action.hover' }}>{action.icon}</IconButton></span>
+              <span><IconButton disabled={action.disabled} onClick={action.run} color={action.color} size="small" aria-label={t('fieldLabel', { label: action.label, name: image.name })} sx={{ bgcolor: 'action.hover' }}>{action.icon}</IconButton></span>
             </Tooltip>
           ))}
         </Stack>

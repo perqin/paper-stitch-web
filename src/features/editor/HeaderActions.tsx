@@ -1,9 +1,16 @@
 import { useId, useState } from 'react'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import GitHubIcon from '@mui/icons-material/GitHub'
+import HelpIcon from '@mui/icons-material/HelpOutlined'
 import LanguageIcon from '@mui/icons-material/Language'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import IconButton from '@mui/material/IconButton'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
@@ -16,8 +23,11 @@ export default function HeaderActions() {
   const { t, i18n } = useTranslation()
   const { mode, systemMode, setMode } = useColorScheme()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
   const menuId = useId()
   const buttonId = useId()
+  const helpTitleId = useId()
+  const helpDescriptionId = useId()
   const resolvedMode = mode === 'system' ? systemMode : mode
   const isDark = resolvedMode === 'dark'
   const themeLabel = t(isDark ? 'switchToLight' : 'switchToDark')
@@ -33,8 +43,9 @@ export default function HeaderActions() {
   }
 
   return (
-    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+    <Stack direction="row" spacing={{ xs: 0, sm: 0.5 }} sx={{ alignItems: 'center', flexShrink: 0, '& .MuiIconButton-root': { width: 32, height: 32 } }}>
       <IconButton
+        size="small"
         id={buttonId}
         aria-label={t('language')}
         title={t('language')}
@@ -60,6 +71,7 @@ export default function HeaderActions() {
         </MenuItem>
       </Menu>
       <IconButton
+        size="small"
         aria-label={themeLabel}
         title={themeLabel}
         disabled={!resolvedMode}
@@ -68,6 +80,7 @@ export default function HeaderActions() {
         {isDark ? <LightModeIcon /> : <DarkModeIcon />}
       </IconButton>
       <IconButton
+        size="small"
         component="a"
         href="https://github.com/perqin/paper-stitch-web"
         target="_blank"
@@ -77,6 +90,12 @@ export default function HeaderActions() {
       >
         <GitHubIcon />
       </IconButton>
+      <IconButton size="small" aria-label={t('help')} title={t('help')} onClick={() => setHelpOpen(true)}><HelpIcon /></IconButton>
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} aria-labelledby={helpTitleId} aria-describedby={helpDescriptionId} maxWidth="xs" fullWidth>
+        <DialogTitle id={helpTitleId}>{t('aboutTitle', { name: t('productName') })}</DialogTitle>
+        <DialogContent><DialogContentText id={helpDescriptionId}>{t('helpDescription')}</DialogContentText></DialogContent>
+        <DialogActions><Button onClick={() => setHelpOpen(false)}>{t('close')}</Button></DialogActions>
+      </Dialog>
     </Stack>
   )
 }

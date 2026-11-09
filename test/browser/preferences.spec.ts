@@ -71,7 +71,7 @@ for (const width of [1280, 375]) test(`general controls and rounded scrollable c
   await expect(page.getByRole('button', { name: 'Freeform', exact: true })).toHaveCount(0)
   const general = page.getByRole('region', { name: 'General controls', exact: true })
   await expect(general.getByRole('button', { name: 'Reset', exact: true })).toBeDisabled()
-  await expect(general.getByRole('checkbox', { name: 'Translucent overlaps', exact: true })).not.toBeChecked()
+  await expect(general.getByRole('switch', { name: 'Translucent overlaps', exact: true })).toBeChecked()
   const image = await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width = 8; canvas.height = 6
     return canvas.toDataURL().split(',')[1]
@@ -92,6 +92,13 @@ for (const width of [1280, 375]) test(`general controls and rounded scrollable c
   expect(dimensions.overflow).toBe(true)
   await page.getByRole('region', { name: 'Imported images', exact: true }).evaluate(element => { element.scrollTop = element.scrollHeight })
   await expect(page.getByRole('button', { name: 'Remove image: 5.png', exact: true })).toBeVisible()
+  const addImages = page.getByRole('region', { name: 'Imported images', exact: true }).getByRole('button', { name: 'Add images', exact: true })
+  await addImages.scrollIntoViewIfNeeded()
+  await expect(addImages).toBeInViewport()
+  expect(await addImages.evaluate(button => {
+    const list = button.closest('section')!.querySelector('ul')!
+    return !button.closest('li') && Boolean(list.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING)
+  })).toBe(true)
   await expect.poll(() => page.getByRole('region', { name: 'Imported images', exact: true }).evaluate(element => element.scrollTop)).toBeGreaterThan(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.getByLabel('Stitch controls', { exact: true }).screenshot({ path: test.info().outputPath(`preferences-${width}.png`) })
