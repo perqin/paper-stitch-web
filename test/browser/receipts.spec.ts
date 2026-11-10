@@ -1,14 +1,21 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
-test('real receipt scans download at full resolution through PNG and JPEG controls', async ({ page }) => {
+test('tall synthetic images download at full resolution through PNG and JPEG controls', async ({ page }) => {
   await page.goto('/')
-  await page.locator('input[type=file]').setInputFiles([
-    'src/features/editor/assets/receipt-top.png',
-    'src/features/editor/assets/receipt-bottom.png',
-  ])
+  const scans = await page.evaluate(() => [[672, 3375], [670, 3282]].map(([width, height], index) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = width; canvas.height = height
+    const context = canvas.getContext('2d')!
+    context.fillStyle = index ? '#006699' : '#cc6600'
+    context.fillRect(0, 0, width, height)
+    return canvas.toDataURL().split(',')[1]
+  }))
+  await page.locator('input[type=file]').setInputFiles(scans.map((data, index) => ({
+    name: `scan-${index + 1}.png`, mimeType: 'image/png', buffer: Buffer.from(data, 'base64'),
+  })))
   await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 672 × 6657 px')
-  const offset = page.getByRole('spinbutton', { name: 'Y offset: receipt-bottom.png', exact: true })
+  const offset = page.getByRole('spinbutton', { name: 'Y offset: scan-2.png', exact: true })
   await offset.fill('-200')
   await offset.press('Tab')
   await expect(page.getByLabel('Output dimensions')).toHaveText('Output: 672 × 6457 px')

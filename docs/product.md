@@ -13,7 +13,7 @@ The control panel contains, from top to bottom:
 1. **Identity:** application logo and localized product name, followed by language, light/dark theme, GitHub, and help icon buttons. GitHub opens the project repository in a new tab. Help briefly explains the purpose and privacy model: images stay in browser memory and are never uploaded.
 2. **Stitch mode:** Vertical (default) and Horizontal.
 3. **General controls:** **Background** color, a labeled **Reset** button, and a **Translucent overlaps** switch (on by default).
-4. **Images:** an independently scrollable list with **Add images** after the last card. An empty list instead centers a large floating action button with a short click-to-add hint below it.
+4. **Images:** an independently scrollable list with **Add images** after the last card. An empty list instead centers a large floating action button with a short click-or-drag hint below it.
 5. **Download:** final output dimensions in pixels and a split button, with PNG as the default format and JPEG as an alternative.
 
 The interface supports English and Chinese, including field labels, validation, and application errors. It initially chooses the first supported language in the browser's language preferences, falling back to English. The language menu offers **English** and **中文**. The theme initially follows the browser's light/dark preference and reacts to system changes until explicitly switched with the moon/sun button. Explicit language and theme choices are remembered locally; images and edits are not persisted. Neither preference changes the canvas background or exported content.
@@ -36,6 +36,8 @@ Changing stitch mode and clicking Reset first open a confirmation dialog warning
 ## Import and editing
 
 The right panel starts with no images. Both the empty-list floating action button and the trailing Add images button open a multi-file picker and decode browser-supported image formats locally, preserving selection order. Each successful image gets an independent record and thumbnail, even when importing the same file again. Unsupported or corrupt files show an error without discarding successful files. Images live only in browser memory and are not uploaded or persisted.
+
+Files can also be dropped anywhere on the page, including over controls and dialogs. A full-screen translucent overlay prompts users to drop images, then disappears on drop, leaving the page, or cancellation. Dropped files use the same local decoder, ordering, and per-file errors as the picker; multiple batches are queued in arrival order. Dragging text, links, or existing webpage images does not activate file import.
 
 Offsets and inward crops accept whole pixels and apply valid changes immediately. Native input arrows and focused Up/Down keys step by one pixel without losing focus; preview and output dimensions update without waiting for blur. Incomplete text remains a local draft, and invalid values never replace the last valid document value. Blur or Enter finalizes text and reports incomplete input. Crop must leave at least one pixel on each axis. The rotate button advances one clockwise quarter-turn per click. Images can be moved up/down or removed; the first/last ordering actions are disabled at their respective boundaries. Reset and mode changes clear all edits, including unfinished input drafts.
 

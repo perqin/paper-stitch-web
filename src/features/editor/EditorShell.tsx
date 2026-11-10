@@ -20,6 +20,7 @@ import ConfirmDialog from './ConfirmDialog'
 import DownloadPanel from './DownloadPanel'
 import HeaderActions from './HeaderActions'
 import ImageCard from './ImageCard'
+import ImageDropOverlay from './ImageDropOverlay'
 import { localizeError } from './localizedErrors'
 import { editorStore, useEditorStore } from './store'
 import { createImageResources } from './resources'
@@ -35,7 +36,9 @@ export default function EditorShell() {
   const backgroundColor = useEditorStore(state => state.backgroundColor)
   const images = useEditorStore(state => state.images)
   const [resetGeneration, setResetGeneration] = useState(0)
-  const [importing, setImporting] = useState(false)
+  const [pendingImports, setPendingImports] = useState(0)
+  const pendingImportCount = useRef(0)
+  const importing = pendingImports > 0
   const [errors, setErrors] = useState<string[]>([])
   const [alignmentEnabled, setAlignmentEnabled] = useState(true)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
@@ -67,19 +70,21 @@ export default function EditorShell() {
     setPendingAction(null)
   }
 
-  async function importFiles(files: File[]) {
+  const importFiles = useCallback(async (files: File[]) => {
     if (!files.length) return
-    setImporting(true)
-    setErrors([])
+    if (pendingImportCount.current === 0) setErrors([])
+    pendingImportCount.current++
+    setPendingImports(count => count + 1)
     try {
       const failures = await imageResources.importFiles(files)
-      if (mounted.current) setErrors(failures)
+      if (mounted.current) setErrors(previous => [...previous, ...failures])
     } catch {
-      if (mounted.current) setErrors(['Images could not be imported. Please try again.'])
+      if (mounted.current) setErrors(previous => [...previous, 'Images could not be imported. Please try again.'])
     } finally {
-      if (mounted.current) setImporting(false)
+      pendingImportCount.current--
+      if (mounted.current) setPendingImports(count => count - 1)
     }
-  }
+  }, [])
 
   return (
     <Box component="main" sx={{
@@ -87,6 +92,7 @@ export default function EditorShell() {
       gap: 3, p: { xs: 2, md: 3 }, height: { md: '100dvh' }, minHeight: '100dvh',
     }}>
       <CanvasPreview resources={imageResources} alignmentEnabled={alignmentEnabled} />
+      <ImageDropOverlay onFiles={importFiles} />
       <Box component="aside" aria-label={t('stitchControls')} sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: { xs: 850, md: '100%' } }}>
         <Stack component="header" direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2.5 }}>
           <Box component="img" src={`${import.meta.env.BASE_URL}paper-stitch.svg`} alt={t('iconAlt')} width={40} height={40} sx={{ display: 'block', flexShrink: 0 }} />

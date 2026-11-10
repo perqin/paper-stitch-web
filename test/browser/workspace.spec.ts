@@ -10,7 +10,7 @@ for (const width of [1280, 375]) test(`empty-list FAB is centered and becomes a 
   const list = page.getByRole('region', { name: 'Imported images', exact: true })
   const add = list.getByRole('button', { name: 'Add images', exact: true })
   await expect(add).toHaveClass(/MuiFab-sizeLarge/)
-  await expect(list.getByText('Click to add images.', { exact: true })).toBeVisible()
+  await expect(list.getByText('Click or drag images here to add them.', { exact: true })).toBeVisible()
   const region = (await list.boundingBox())!, fab = (await add.boundingBox())!
   expect(fab.x + fab.width / 2).toBeCloseTo(region.x + region.width / 2, 3)
   expect(Math.abs(fab.y + fab.height / 2 - region.y - region.height / 2)).toBeLessThan(32)
